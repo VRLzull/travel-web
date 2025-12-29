@@ -1,0 +1,266 @@
+### Testing Travel Web API
+### File ini bisa digunakan dengan extension REST Client di VS Code
+### Atau bisa di-copy ke Postman/Insomnia
+
+@baseUrl = http://localhost:4000/api
+@adminToken = YOUR_ADMIN_TOKEN_HERE
+@userToken = YOUR_USER_TOKEN_HERE
+
+### ============================================
+### 1. AUTHENTICATION
+### ============================================
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Register User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "testuser@example.com",
+  "phone": "081234567890"
+}
+
+### Login User
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "password123",
+  "isAdmin": false
+}
+
+### Login Admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123",
+  "isAdmin": true
+}
+
+### Get Current User (Protected)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 2. PACKAGES (Public Routes)
+### ============================================
+
+### Get All Packages
+GET {{baseUrl}}/packages
+
+### Get Package Detail
+GET {{baseUrl}}/packages/1
+
+### ============================================
+### 3. PACKAGES (Admin Routes)
+### ============================================
+
+### Create Package
+POST {{baseUrl}}/packages
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Paket Wisata Bali 3D2N",
+  "location": "Bali, Indonesia",
+  "category": "Domestic",
+  "duration_days": 3,
+  "price_per_person": 2500000,
+  "short_description": "Nikmati keindahan pulau dewata",
+  "description": "Paket lengkap wisata Bali selama 3 hari 2 malam dengan berbagai destinasi menarik seperti Tanah Lot, Ubud, dan Pantai Kuta",
+  "primary_image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4"
+}
+
+### Update Package
+PUT {{baseUrl}}/packages/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Paket Wisata Bali 4D3N",
+  "price_per_person": 3000000,
+  "duration_days": 4
+}
+
+### Delete Package
+DELETE {{baseUrl}}/packages/1
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 4. PACKAGE IMAGES (Admin Routes)
+### ============================================
+
+### Add Image to Package
+POST {{baseUrl}}/packages/1/images
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "image_url": "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2",
+  "is_primary": false
+}
+
+### Set Primary Image
+PUT {{baseUrl}}/packages/1/images/primary
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "image_id": 2
+}
+
+### Delete Image
+DELETE {{baseUrl}}/packages/images/2
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 5. PACKAGE SCHEDULES (Admin Routes)
+### ============================================
+
+### Add Schedule to Package
+POST {{baseUrl}}/packages/1/schedules
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "departure_date": "2024-12-25",
+  "available_quota": 20
+}
+
+### Update Schedule
+PUT {{baseUrl}}/packages/schedules/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "available_quota": 15,
+  "departure_date": "2024-12-26"
+}
+
+### Delete Schedule
+DELETE {{baseUrl}}/packages/schedules/1
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 6. BOOKINGS
+### ============================================
+
+### Create Booking
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+
+{
+  "package_id": 1,
+  "trip_date": "2024-12-25",
+  "customer_name": "John Doe",
+  "customer_email": "john@example.com",
+  "customer_phone": "081234567890",
+  "total_participants": 2,
+  "schedule_id": 1
+}
+
+### Create Booking (Minimal - tanpa schedule_id)
+### ⚠️ PENTING: Jangan isi schedule_id jika tidak yakin schedule-nya ada
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+
+{
+  "package_id": 1,
+  "trip_date": "2024-12-25",
+  "customer_name": "Jane Smith",
+  "customer_email": "jane@example.com",
+  "customer_phone": "081234567891",
+  "total_participants": 1
+}
+
+### Create Booking dengan schedule_id (pastikan schedule_id valid)
+### Langkah: 1) Cek package detail dulu untuk lihat schedules
+###         2) Gunakan schedule_id yang ada
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+
+{
+  "package_id": 1,
+  "schedule_id": 1,
+  "trip_date": "2024-12-25",
+  "customer_name": "Bob Johnson",
+  "customer_email": "bob@example.com",
+  "customer_phone": "081234567892",
+  "total_participants": 2
+}
+
+### Get All Bookings
+GET {{baseUrl}}/bookings
+
+### Get All Bookings with Filter
+GET {{baseUrl}}/bookings?payment_status=pending&limit=10&offset=0
+
+### Get Booking Detail
+GET {{baseUrl}}/bookings/1
+
+### ============================================
+### 7. PAYMENTS
+### ============================================
+
+### Create Payment
+POST {{baseUrl}}/payment/create
+Content-Type: application/json
+
+{
+  "booking_id": 1
+}
+
+### Check Payment Status
+GET {{baseUrl}}/payment/status/ORDER-4-1764511177993
+
+### ============================================
+### 8. SIMULASI WEBHOOK NOTIFICATION (Testing)
+### ============================================
+
+### Simulasi Payment Success (Status: paid)
+POST {{baseUrl}}/payment/notification
+Content-Type: application/json
+
+{
+  "transaction_time": "2024-12-01 12:00:00",
+  "transaction_status": "settlement",
+  "transaction_id": "test-123456",
+  "status_message": "midtrans payment notification",
+  "status_code": "200",
+  "signature_key": "test",
+  "payment_type": "credit_card",
+  "order_id": "ORDER-4-1764511177993",
+  "merchant_id": "G123456789",
+  "gross_amount": "6000000.00",
+  "fraud_status": "accept",
+  "currency": "IDR"
+}
+
+### Simulasi Payment Expired
+POST {{baseUrl}}/payment/notification
+Content-Type: application/json
+
+{
+  "transaction_status": "expire",
+  "order_id": "ORDER-4-1764511177993",
+  "status_code": "202",
+  "gross_amount": "6000000.00"
+}
+
+### Simulasi Payment Cancelled
+POST {{baseUrl}}/payment/notification
+Content-Type: application/json
+
+{
+  "transaction_status": "cancel",
+  "order_id": "ORDER-4-1764511177993",
+  "status_code": "201",
+  "gross_amount": "6000000.00"
+}
+
