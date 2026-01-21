@@ -22,6 +22,7 @@ router.use('/payment', paymentRoutes);
 
 let localClient: Client | null = null;
 let botStatus = 'initializing';
+let lastQR = '';
 
 export function initializeLocalWhatsApp() {
   if (env.waProvider !== 'local') return;
@@ -51,7 +52,9 @@ export function initializeLocalWhatsApp() {
 
   localClient.on('qr', (qr) => {
     botStatus = 'qr_required';
-    console.log('QR RECEIVED. SCAN THIS WITH YOUR WHATSAPP:');
+    lastQR = qr;
+    console.log('QR RECEIVED. IF LOGS ARE DISTORTED, OPEN THIS URL TO SCAN:');
+    console.log(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`);
     qrcode.generate(qr, { small: true });
   });
 
@@ -108,6 +111,25 @@ export function initializeLocalWhatsApp() {
 
   localClient.initialize();
 }
+
+router.get('/whatsapp/qr', (req, res) => {
+  if (botStatus === 'ready' || botStatus === 'authenticated') {
+    return res.send('WhatsApp sudah terhubung (Authenticated)!');
+  }
+  if (!lastQR) {
+    return res.send('QR Code belum tersedia, silakan tunggu atau restart server.');
+  }
+  
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(lastQR)}`;
+  res.send(`
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
+      <h2>Scan WhatsApp QR Code</h2>
+      <img src="${qrUrl}" alt="QR Code" style="border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1);" />
+      <p>Status: <strong>${botStatus}</strong></p>
+      <p>Refresh halaman jika QR tidak muncul atau kadaluarsa.</p>
+    </div>
+  `);
+});
 
 router.get('/health', (req, res) => {
   res.json({
