@@ -27,7 +27,7 @@ export default function ContactPage() {
     {
       icon: <FiMail className="w-6 h-6 text-blue-600" />,
       title: 'Email',
-      detail: 'info@tourku.com',
+      detail: 'danang.kurniawan.coach@gmail.com',
       description: 'Kami balas dalam 24 jam'
     },
     {

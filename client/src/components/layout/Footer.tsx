@@ -96,11 +96,11 @@ const Footer = () => {
             <div className="flex space-x-6 md:order-2">
               <div className="flex items-center">
                 <FiPhone className="h-5 w-5 text-gray-400 mr-2" />
-                <span className="text-gray-300">+62 123 4567 890</span>
+                <span className="text-gray-300">+62 853-8563-1827</span>
               </div>
               <div className="flex items-center">
                 <FiMail className="h-5 w-5 text-gray-400 mr-2" />
-                <span className="text-gray-300">info@tourku.com</span>
+                <span className="text-gray-300">danang.kurniawan.coach@gmail.com</span>
               </div>
             </div>
             <p className="mt-8 text-base text-gray-400 md:mt-0 md:order-1">
