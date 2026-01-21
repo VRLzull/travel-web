@@ -1,0 +1,8 @@
+[phases.setup]
+nixpkgsArchive = "ba609f3e481104e76d91f24d9c4918e0a6d09439"
+
+[phases.install]
+cmds = [
+  "npm install",
+  "apt-get update && apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2"
+]
