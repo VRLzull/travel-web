@@ -22,7 +22,6 @@ router.use('/payment', paymentRoutes);
 
 let localClient: Client | null = null;
 let botStatus = 'initializing';
-let lastQR = '';
 
 export function initializeLocalWhatsApp() {
   if (env.waProvider !== 'local') return;
@@ -30,7 +29,7 @@ export function initializeLocalWhatsApp() {
   console.log('Initializing Local WhatsApp Bot...');
   localClient = new Client({
     authStrategy: new LocalAuth({
-      dataPath: process.env.WA_SESSION_PATH || './session'
+      dataPath: './session'
     }),
     webVersionCache: {
       type: 'remote',
@@ -52,9 +51,7 @@ export function initializeLocalWhatsApp() {
 
   localClient.on('qr', (qr) => {
     botStatus = 'qr_required';
-    lastQR = qr;
-    console.log('QR RECEIVED. IF LOGS ARE DISTORTED, OPEN THIS URL TO SCAN:');
-    console.log(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`);
+    console.log('QR RECEIVED. SCAN THIS WITH YOUR WHATSAPP:');
     qrcode.generate(qr, { small: true });
   });
 
@@ -111,25 +108,6 @@ export function initializeLocalWhatsApp() {
 
   localClient.initialize();
 }
-
-router.get('/whatsapp/qr', (req, res) => {
-  if (botStatus === 'ready' || botStatus === 'authenticated') {
-    return res.send('WhatsApp sudah terhubung (Authenticated)!');
-  }
-  if (!lastQR) {
-    return res.send('QR Code belum tersedia, silakan tunggu atau restart server.');
-  }
-  
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(lastQR)}`;
-  res.send(`
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
-      <h2>Scan WhatsApp QR Code</h2>
-      <img src="${qrUrl}" alt="QR Code" style="border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1);" />
-      <p>Status: <strong>${botStatus}</strong></p>
-      <p>Refresh halaman jika QR tidak muncul atau kadaluarsa.</p>
-    </div>
-  `);
-});
 
 router.get('/health', (req, res) => {
   res.json({
@@ -213,7 +191,7 @@ router.post('/twilio/webhook', async (req, res) => {
 
 async function keywordReply(t: string): Promise<string | null> {
   const s = t.toLowerCase();
-  const baseUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_CLIENT_URL || 'https://faraday-and-travel-web.com';
+  const baseUrl = process.env.NEXT_PUBLIC_CLIENT_URL || process.env.FRONTEND_URL || 'https://travelkamu.com';
 
   if (s.includes('order id:') || s.includes('order id :')) {
     const orderId = t.split(/order id\s*:/i)[1]?.trim().split('\n')[0];
@@ -232,7 +210,7 @@ async function keywordReply(t: string): Promise<string | null> {
             'Ini ringkasan pesanan Anda:',
             '',
             `📌 Layanan: ${booking.package?.title || 'Layanan Travel'}`,
-            `📅 Tanggal: ${booking.trip_date ? new Date(booking.trip_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}`,
+            `📅 Tanggal: ${new Date(booking.trip_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`,
             `👥 Durasi/Unit: ${booking.total_participants} Hari`,
           ];
 
@@ -256,10 +234,6 @@ async function keywordReply(t: string): Promise<string | null> {
           );
 
           return lines.join('\n');
-        } else {
-          // Jika tidak ditemukan di DB, biarkan buildReply yang menangani berdasarkan teks saja
-          console.log(`[WA] Booking with ID ${orderId} not found in DB, falling back to text parsing.`);
-          return null;
         }
       } catch (err) {
         console.error('Error fetching booking for bot:', err);
@@ -360,15 +334,11 @@ function buildReply(t: string): string {
   const baseUrl = process.env.NEXT_PUBLIC_CLIENT_URL || process.env.FRONTEND_URL || 'https://travelkamu.com';
   
   const get = (label: string) => {
-    const target = lines.find(l => l.toLowerCase().includes(label.toLowerCase()));
+    const target = lines.find(l => l.toLowerCase().startsWith(label.toLowerCase()));
     return target ? target.split(':').slice(1).join(':').trim() : '';
   };
 
-  let packageTitle = get('paket') || lines[0]?.replace(/\*/g, '') || 'Layanan Travel';
-  if (packageTitle.toLowerCase().includes('pesanan baru')) {
-    // If first line is a header, try to find package in the rest of the text
-    packageTitle = get('paket') || 'Layanan Travel';
-  }
+  const packageTitle = lines[0]?.replace(/\*/g, '') || 'Layanan Travel';
   const nama = get('nama');
   const tanggal = get('hari/tgl');
   const jam = get('jam travel') || get('jam jemput') || '06.00';
