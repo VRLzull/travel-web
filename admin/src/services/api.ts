@@ -3,14 +3,23 @@ interface ApiError extends Error {
   message: string;
 }
 
-const getDefaultBaseUrl = () => {
+const getBaseUrl = () => {
+  const envUrl = import.meta.env?.VITE_API_URL as string;
+  if (envUrl) {
+    // Pastikan URL dimulai dengan http atau https
+    if (envUrl.startsWith('http')) return envUrl;
+    return `https://${envUrl}`;
+  }
+  
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    return `http://${host}:4000/api`;
+    if (host === 'localhost') return 'http://localhost:4000/api';
+    return `https://${host}:4000/api`;
   }
   return 'http://localhost:4000/api';
 };
-const API_BASE_URL = (import.meta.env?.VITE_API_URL as string) || getDefaultBaseUrl();
+
+const API_BASE_URL = getBaseUrl();
 
 export const getBackendOrigin = () => {
   return API_BASE_URL.replace(/\/api$/, '');
