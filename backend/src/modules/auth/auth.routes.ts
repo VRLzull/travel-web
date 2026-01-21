@@ -70,4 +70,8 @@ adminRouter.post('/stats/reset-revenue', (req: Request, res: Response) => {
 // Gunakan router admin untuk path /admin
 router.use('/admin', adminRouter);
 
+router.post('/admin/bootstrap', (req: Request, res: Response) => {
+  return authController.bootstrapAdmin(req, res);
+});
+
 export default router;

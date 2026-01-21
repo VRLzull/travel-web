@@ -25,5 +25,6 @@ export const env = {
   twilioWhatsAppFrom: process.env.TWILIO_WHATSAPP_FROM || "",
   chatbotApiKey: process.env.CHATBOT_API_KEY || "",
   chatbotApiEndpoint: process.env.CHATBOT_API_ENDPOINT || "",
-  isLocalBot: process.env.WA_PROVIDER === 'local'
+  isLocalBot: process.env.WA_PROVIDER === 'local',
+  adminBootstrapToken: process.env.ADMIN_BOOTSTRAP_TOKEN || ""
 };

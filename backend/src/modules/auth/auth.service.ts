@@ -190,3 +190,16 @@ export const resetUserPassword = async (userId: number, newPassword: string) => 
   const updated = (users as IUser[])[0];
   return updated;
 };
+
+export const bootstrapAdminUser = async (email: string, password: string, name: string = 'Administrator') => {
+  if (!email || !password) {
+    throw new Error('Email dan password diperlukan');
+  }
+  const [exist] = await pool.query<any[]>('SELECT id FROM admin_users WHERE email = ? LIMIT 1', [email]);
+  if (Array.isArray(exist) && exist.length > 0) {
+    return { created: false, id: exist[0].id };
+  }
+  const password_hash = await bcrypt.hash(password, 10);
+  const [result] = await pool.query<any>('INSERT INTO admin_users (name, email, password_hash, role) VALUES (?, ?, ?, ?)', [name, email, password_hash, 'ADMIN']);
+  return { created: true, id: result.insertId };
+};

@@ -240,3 +240,20 @@ export const updateMyPassword = async (req: AuthRequest, res: Response) => {
     res.status(400).json({ success: false, message: error.message || 'Gagal mengubah password' });
   }
 };
+
+export const bootstrapAdmin = async (req: Request, res: Response) => {
+  try {
+    const token = String(req.headers['x-bootstrap-token'] || '');
+    if (!token || token !== (process.env.ADMIN_BOOTSTRAP_TOKEN || '')) {
+      return res.status(403).json({ success: false, message: 'Token tidak valid' });
+    }
+    const { email, password, name } = (req.body || {}) as { email?: string; password?: string; name?: string };
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email dan password diperlukan' });
+    }
+    const result = await authService.bootstrapAdminUser(String(email), String(password), String(name || 'Administrator'));
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message || 'Gagal membuat admin' });
+  }
+};
