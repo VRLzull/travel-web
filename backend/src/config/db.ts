@@ -16,7 +16,12 @@ export const pool = mysql.createPool({
 });
 
 export async function testConnection() {
-  const conn = await pool.getConnection();
-  await conn.ping();
-  conn.release();
+  try {
+    const conn = await pool.getConnection();
+    await conn.ping();
+    console.log("✅ Database connected successfully to:", env.dbHost);
+    conn.release();
+  } catch (error) {
+    console.error("❌ Database connection failed:", error);
+  }
 }

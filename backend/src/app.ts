@@ -3,10 +3,14 @@ import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
 import routes, { initializeLocalWhatsApp } from "./routes";
+import { testConnection } from "./config/db";
 
 dotenv.config();
 
 const app = express();
+
+// Test DB Connection
+testConnection();
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
