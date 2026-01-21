@@ -44,7 +44,7 @@ async function authFetch(path: string, options: RequestInit = {}) {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminUser');
           sessionStorage.removeItem('adminToken');
-          window.location.href = '/admin/login';
+          window.location.href = '/login';
         }
       } catch {}
     }
@@ -54,7 +54,7 @@ async function authFetch(path: string, options: RequestInit = {}) {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminUser');
           sessionStorage.removeItem('adminToken');
-          window.location.href = '/admin/login';
+          window.location.href = '/login';
         }
       } catch {}
       message = message || 'Akses ditolak';
