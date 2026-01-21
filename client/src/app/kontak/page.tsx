@@ -21,7 +21,7 @@ export default function ContactPage() {
     {
       icon: <FiPhone className="w-6 h-6 text-blue-600" />,
       title: 'Telepon',
-      detail: '+62 812-3456-7890',
+      detail: '+62 853-8563-1827',
       description: 'Senin - Jumat, 09:00 - 17:00'
     },
     {
@@ -33,8 +33,8 @@ export default function ContactPage() {
     {
       icon: <FiMapPin className="w-6 h-6 text-blue-600" />,
       title: 'Kantor Pusat',
-      detail: 'Jl. Malioboro No. 123',
-      description: 'Yogyakarta, Indonesia'
+      detail: 'Jl. Danau Limboto barat dalam No.A4/F28',
+      description: 'Sawojajar, Kec. Kedungkandang, Kota Malang, Jawa Timur 65139 Indonesia'
     },
     {
       icon: <FiClock className="w-6 h-6 text-blue-600" />,
@@ -51,7 +51,7 @@ export default function ContactPage() {
         <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Hubungi Kami</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Punya pertanyaan tentang paket wisata atau ingin merencanakan perjalanan kustom? Tim kami siap membantu Anda.
+            Punya pertanyaan tentang layanan atau ingin merencanakan perjalanan kustom? Tim kami siap membantu Anda.
           </p>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function ContactPage() {
                     type="text"
                     required
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                    placeholder="Contoh: Budi Santoso"
+                    placeholder="Contoh: Name"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                   />
@@ -96,7 +96,7 @@ export default function ContactPage() {
                     type="email"
                     required
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                    placeholder="budi@email.com"
+                    placeholder="google@email.com"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                   />
@@ -107,7 +107,7 @@ export default function ContactPage() {
                     type="text"
                     required
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                    placeholder="Contoh: Tanya Paket Wisata Bali"
+                    placeholder="Contoh: Tanya Layanan Bali"
                     value={formData.subject}
                     onChange={(e) => setFormData({...formData, subject: e.target.value})}
                   />
@@ -142,7 +142,7 @@ export default function ContactPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-[450px]">
           <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3952.973595420364!2d110.3636236!3d-7.7924844!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a5742a17e3c3b%3A0xef72373307436577!2sJl.%20Malioboro%2C%20Sosromenduran%2C%20Gedong%20Tengen%2C%20Kota%20Yogyakarta%2C%20Daerah%20Istimewa%20Yogyakarta!5e0!3m2!1sid!2sid!4v1703312345678!5m2!1sid!2sid"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3951.308987809995!2d112.6598762!3d-7.966985!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x864aa9ebc73dffe7%3A0xc788531bcb0fa56c!2sfaraday%20tour%20and%20travel!5e0!3m2!1sid!2sid!4v1767661630707!5m2!1sid!2sid" 
             width="100%" 
             height="100%" 
             style={{ border: 0 }} 

@@ -16,6 +16,7 @@ export default function NewPackagePage() {
     itinerary: '',
     facilities: '',
   })
+  const [primaryImageFile, setPrimaryImageFile] = useState<File | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -28,7 +29,8 @@ export default function NewPackagePage() {
       await adminApi.createPackage({
         ...form,
         duration_days: Number(form.duration_days),
-        price_per_person: Number(form.price_per_person)
+        price_per_person: Number(form.price_per_person),
+        primary_image_file: primaryImageFile || undefined
       })
       navigate('/admin/packages')
     } catch (e: any) {
@@ -41,8 +43,8 @@ export default function NewPackagePage() {
     <div className="p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Tambah Paket Wisata Baru</h1>
-          <p className="mt-1 text-sm text-gray-500">Isi formulir di bawah untuk menambahkan paket wisata baru</p>
+          <h1 className="text-2xl font-bold text-gray-900">Tambah Layanan Baru</h1>
+          <p className="mt-1 text-sm text-gray-500">Isi formulir di bawah untuk menambahkan layanan baru</p>
         </div>
 
         {errorMsg && (
@@ -55,7 +57,7 @@ export default function NewPackagePage() {
           <div className="px-4 py-5 sm:p-6 space-y-6">
             <div className="grid grid-cols-1 gap-6">
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">Judul Paket</label>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700">Judul Layanan</label>
                 <input
                   type="text"
                   id="title"
@@ -89,9 +91,9 @@ export default function NewPackagePage() {
                     onChange={(e) => setForm({...form, category: e.target.value})}
                   >
                     <option value="">Pilih Kategori</option>
-                    <option value="Domestik">Domestik</option>
-                    <option value="Internasional">Internasional</option>
-                    <option value="Haji & Umroh">Haji & Umroh</option>
+                    <option value="Domestik">travel</option>
+                    <option value="Internasional">carter</option>
+                    <option value="Haji & Umroh">sewa mobil</option>
                     <option value="Private Tour">Private Tour</option>
                   </select>
                 </div>
@@ -112,7 +114,7 @@ export default function NewPackagePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700">Harga per Orang (IDR)</label>
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-700">Harga per Hari (IDR)</label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-gray-500 sm:text-sm">Rp</span>
@@ -131,15 +133,22 @@ export default function NewPackagePage() {
               </div>
 
               <div>
-                <label htmlFor="primary_image" className="block text-sm font-medium text-gray-700">URL Gambar Utama</label>
-                <input
-                  type="url"
-                  id="primary_image"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={form.primary_image}
-                  onChange={(e) => setForm({...form, primary_image: e.target.value})}
-                  placeholder="https://example.com/image.jpg"
-                />
+                <label className="block text-sm font-medium text-gray-700">Gambar Utama</label>
+                <div className="mt-1 flex items-center space-x-4">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setPrimaryImageFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Pilih file gambar untuk ditampilkan sebagai gambar utama paket.
+                </p>
               </div>
 
               <div>
@@ -152,7 +161,7 @@ export default function NewPackagePage() {
                   value={form.short_description}
                   onChange={(e) => setForm({...form, short_description: e.target.value})}
                 />
-                <p className="mt-1 text-xs text-gray-500">Deskripsi singkat yang akan ditampilkan di halaman daftar paket</p>
+                <p className="mt-1 text-xs text-gray-500">Deskripsi singkat yang akan ditampilkan di halaman daftar layanan</p>
               </div>
 
               <div>
@@ -165,7 +174,7 @@ export default function NewPackagePage() {
                   value={form.description}
                   onChange={(e) => setForm({...form, description: e.target.value})}
                 />
-                <p className="mt-1 text-xs text-gray-500">Deskripsi lengkap paket wisata</p>
+                <p className="mt-1 text-xs text-gray-500">Deskripsi lengkap layanan</p>
               </div>
 
               <div>
@@ -211,7 +220,7 @@ export default function NewPackagePage() {
               disabled={saving}
               className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? 'Menyimpan...' : 'Simpan Paket'}
+              {saving ? 'Menyimpan...' : 'Simpan Layanan'}
             </button>
           </div>
         </form>

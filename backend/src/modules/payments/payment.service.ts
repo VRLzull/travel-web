@@ -13,6 +13,13 @@ export function initializeMidtrans() {
     throw new Error('Midtrans credentials are not configured');
   }
   
+  // FORCE OVERRIDE for debugging if needed, but better to rely on env
+  // console.log('Initializing Midtrans with:', {
+  //   isProduction: env.midtransIsProduction,
+  //   serverKey: process.env.MIDTRANS_SERVER_KEY,
+  //   clientKey: process.env.MIDTRANS_CLIENT_KEY
+  // });
+
   midtransSnap = new midtransClient.Snap({
     isProduction: env.midtransIsProduction,
     serverKey: process.env.MIDTRANS_SERVER_KEY,
@@ -99,7 +106,7 @@ const createTransaction = async (booking: Booking, serverKey: string): Promise<M
         id: String(booking.package_id || '1'),
         price: Math.round(pricePerPerson * 100) / 100,
         quantity: participants,
-        name: (booking as any).package_title?.substring(0, 50) || 'Paket Wisata',
+        name: (booking as any).package_title?.substring(0, 50) || 'Layanan',
       },
     ],
     customer_details: {
@@ -461,6 +468,95 @@ export async function updatePaymentAndBookingStatus(
     return { success: true };
   } catch (error) {
     await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function manualCreatePayment(
+  bookingId: number,
+  finalStatus: 'pending' | 'paid' | 'expired' | 'cancelled' = 'paid',
+  amountOverride?: number,
+  note: string = ''
+): Promise<{ success: boolean; order_id: string }> {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [bookingRows] = await connection.query(
+      `SELECT * FROM bookings WHERE id = ? FOR UPDATE`,
+      [bookingId]
+    ) as any[];
+
+    if (!Array.isArray(bookingRows) || bookingRows.length === 0) {
+      throw new Error('Booking not found');
+    }
+
+    const booking = bookingRows[0];
+    const amount = typeof amountOverride === 'number' && amountOverride > 0
+      ? amountOverride
+      : Number(booking.total_amount) || 0;
+
+    const orderId = `MANUAL-${bookingId}-${Date.now()}`;
+
+    const paymentStatus: PaymentStatus = finalStatus === 'paid'
+      ? 'settlement'
+      : finalStatus === 'expired'
+      ? 'expire'
+      : finalStatus === 'cancelled'
+      ? 'cancel'
+      : 'pending';
+
+    await connection.query(
+      `INSERT INTO payments (
+        booking_id,
+        payment_method,
+        amount,
+        status,
+        midtrans_transaction_id,
+        midtrans_payment_type,
+        midtrans_response_json,
+        created_at,
+        updated_at
+      ) VALUES (?, 'whatsapp', ?, ?, ?, 'whatsapp', ?, NOW(), NOW())
+      ON DUPLICATE KEY UPDATE
+        amount = VALUES(amount),
+        status = VALUES(status),
+        midtrans_transaction_id = VALUES(midtrans_transaction_id),
+        midtrans_payment_type = VALUES(midtrans_payment_type),
+        midtrans_response_json = VALUES(midtrans_response_json),
+        updated_at = NOW()`,
+      [
+        bookingId,
+        amount,
+        paymentStatus,
+        orderId,
+        JSON.stringify({ method: 'whatsapp', note })
+      ]
+    );
+
+    const bookingStatusText = finalStatus === 'paid'
+      ? 'paid'
+      : finalStatus === 'expired'
+      ? 'expired'
+      : finalStatus === 'cancelled'
+      ? 'cancelled'
+      : 'pending';
+
+    await connection.query(
+      `UPDATE bookings
+       SET payment_status = ?,
+           updated_at = NOW()
+       WHERE id = ?`,
+      [bookingStatusText, bookingId]
+    );
+
+    await connection.commit();
+    return { success: true, order_id: orderId };
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Error in manualCreatePayment:', error.message);
     throw error;
   } finally {
     connection.release();

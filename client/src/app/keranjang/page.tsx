@@ -83,12 +83,12 @@ export default function CartPage() {
               <FiShoppingCart className="w-12 h-12 text-blue-400" />
             </div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Keranjang Anda Kosong</h2>
-            <p className="text-gray-500 mb-8">Sepertinya Anda belum menambahkan paket wisata apa pun.</p>
+            <p className="text-gray-500 mb-8">Sepertinya Anda belum menambahkan layanan apa pun.</p>
             <Link
               href="/paket-wisata"
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
-              <FiArrowLeft className="mr-2" /> Jelajahi Paket Wisata
+              <FiArrowLeft className="mr-2" /> Jelajahi Layanan
             </Link>
           </div>
         ) : (
@@ -139,7 +139,7 @@ export default function CartPage() {
                   href="/paket-wisata"
                   className="inline-flex items-center text-blue-600 font-medium hover:underline"
                 >
-                  <FiArrowLeft className="mr-2" /> Tambah Paket Lainnya
+                  <FiArrowLeft className="mr-2" /> Tambah Layanan Lainnya
                 </Link>
               </div>
             </div>

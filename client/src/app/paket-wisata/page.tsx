@@ -26,21 +26,21 @@ export default function PaketWisata() {
         setPackages(data);
         setFiltered(data);
         
-        // Ambil detail untuk setiap paket untuk mendapatkan gambar
+        // Ambil detail untuk setiap layanan untuk mendapatkan gambar
         const details: Record<number, PackageDetail> = {};
         for (const pkg of data) {
           try {
             const detail = await apiClient.getPackageById(pkg.id);
             details[pkg.id] = detail;
           } catch (error) {
-            console.error(`Gagal memuat detail paket ${pkg.id}:`, error);
+            console.error(`Gagal memuat detail layanan ${pkg.id}:`, error);
           }
         }
         setPackageDetails(details);
       } catch {
         setPackages([]);
         const apiBase = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:4000/api` : '');
-        setErrorMsg(`Gagal memuat paket dari ${apiBase}. Pastikan backend berjalan dan dapat diakses.`);
+        setErrorMsg(`Gagal memuat layanan dari ${apiBase}. Pastikan backend berjalan dan dapat diakses.`);
       } finally {
         setLoading(false);
       }
@@ -146,8 +146,8 @@ export default function PaketWisata() {
           {/* Package List */}
           <div className="w-full md:w-3/4">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Semua Paket Wisata</h2>
-              <div className="text-sm text-gray-500">{loading ? 'Memuat...' : `Menampilkan ${filtered.length} paket`}</div>
+              <h2 className="text-2xl font-bold text-gray-800">Katalog Layanan (Reguler, Carter, Sewa Mobil)</h2>
+              <div className="text-sm text-gray-500">{loading ? 'Memuat...' : `Menampilkan ${filtered.length} layanan`}</div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -165,8 +165,14 @@ export default function PaketWisata() {
                 }
                 
                 // Jika masih kosong, gunakan gambar default
+                const category = (pkg.category || '').toLowerCase().trim();
+                const categoryImageMap: Record<string, string> = {
+                  travel_reguler: '/packages/bali.webp',
+                  carter: '/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM (1).jpeg',
+                  sewa_mobil: '/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM.jpeg',
+                };
                 if (!imageUrl) {
-                  imageUrl = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&q=80';
+                  imageUrl = categoryImageMap[category] || '/packages/placeholder-package.svg';
                 }
                 
                 // Hapus priceRange karena tidak digunakan di PackageCard

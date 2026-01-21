@@ -140,7 +140,8 @@ export const optionalAuthenticate = async (req: IAuthRequest, res: Response, nex
       const user = await getUserFromDatabase(decoded.id, decoded.type);
       if (user) {
         req.user = user;
-        req.role = 'role' in user ? (user.role as string) : 'user';
+        const r = 'role' in user ? (user.role as string) : 'user';
+        req.role = (r === 'user' ? r : r.toUpperCase()) as UserRole;
       }
     } catch (error) {
       // Ignore token verification errors in optional authentication

@@ -11,7 +11,6 @@ import {
   Tooltip,
   Filler,
   Legend,
-  type ChartOptions
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 
@@ -32,30 +31,58 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [stats, setStats] = useState<AdminStats | any>(null)
+  const [resetLoading, setResetLoading] = useState(false)
+
+  const loadData = async () => {
+    setLoading(true)
+    setErrorMsg('')
+    try {
+      const data = await adminApi.getBookings()
+      setBookings(Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [])
+      const s = await adminApi.getAdminStats()
+      setStats(s?.data || null)
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Gagal memuat data')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      setErrorMsg('')
-      try {
-        const data = await adminApi.getBookings()
-        setBookings(Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [])
-        const s = await adminApi.getAdminStats()
-        setStats(s?.data || null)
-      } catch (e: any) {
-        setErrorMsg(e?.message || 'Gagal memuat data')
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+    loadData()
   }, [])
 
+  const handleResetRevenue = async () => {
+    if (!window.confirm('Apakah Anda yakin ingin me-reset data pendapatan menjadi nol? Tindakan ini akan mengabaikan transaksi sebelum waktu sekarang dalam perhitungan statistik.')) {
+      return
+    }
+
+    setResetLoading(true)
+    try {
+      await adminApi.resetRevenue()
+      await loadData()
+      alert('Data pendapatan berhasil di-reset.')
+    } catch (e: any) {
+      alert(e.message || 'Gagal reset pendapatan')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
   const totalOrders = stats?.total_orders ?? bookings.length
-  const totalRevenue = stats?.total_revenue ?? bookings
-    .filter(b => String(b.payment_status).toLowerCase() === 'paid')
-    .reduce((sum, b) => sum + Number(b.total_amount || 0), 0)
+  const totalRevenue = useMemo(() => {
+    if (stats?.total_revenue !== undefined) return stats.total_revenue;
+    
+    const resetDate = stats?.reset_date ? new Date(stats.reset_date) : new Date(0);
+    return bookings
+      .filter(b => {
+        const isPaid = String(b.payment_status).toLowerCase() === 'paid';
+        const isAfterReset = new Date(b.created_at) >= resetDate;
+        return isPaid && isAfterReset;
+      })
+      .reduce((sum, b) => sum + Number(b.total_amount || 0), 0);
+  }, [stats, bookings]);
   const totalUsers = stats?.total_users ?? 0
   // Ensure we have valid monthly data
   const monthly = Array.isArray(stats?.monthly) ? stats.monthly : []
@@ -89,6 +116,16 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+          <button
+            onClick={handleResetRevenue}
+            disabled={resetLoading}
+            className="mt-4 md:mt-0 flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          >
+            <svg className="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {resetLoading ? 'Memproses...' : 'Reset Data Pendapatan'}
+          </button>
         </div>
         
         {errorMsg && (
@@ -111,9 +148,7 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Pendapatan</p>
                 <p className="mt-1 text-2xl font-bold text-gray-900">
-                  {new Intl.NumberFormat('id-ID', { 
-                    style: 'currency', 
-                    currency: 'IDR', 
+                  Rp. {new Intl.NumberFormat('id-ID', { 
                     maximumFractionDigits: 0 
                   }).format(totalRevenue)}
                 </p>
@@ -204,11 +239,11 @@ export default function DashboardPage() {
               <div className="h-72">
                 <Line 
                   data={{
-                    labels: monthly.map(m => m.month),
+                    labels: monthly.map((m: any) => m.month),
                     datasets: [{
                       fill: true,
                       label: 'Pendapatan (IDR)',
-                      data: monthly.map(m => m.revenue),
+                      data: monthly.map((m: any) => m.revenue),
                       borderColor: 'rgb(79, 70, 229)',
                       backgroundColor: 'rgba(79, 70, 229, 0.1)',
                       tension: 0.4,
@@ -228,11 +263,9 @@ export default function DashboardPage() {
                         intersect: false,
                         callbacks: {
                           label: (context) => {
-                            return new Intl.NumberFormat('id-ID', { 
-                              style: 'currency', 
-                              currency: 'IDR',
+                            return 'Rp. ' + new Intl.NumberFormat('id-ID', { 
                               maximumFractionDigits: 0
-                            }).format(context.parsed.y);
+                            }).format((context.parsed.y as number) || 0);
                           }
                         }
                       }
@@ -242,9 +275,7 @@ export default function DashboardPage() {
                         beginAtZero: true,
                         ticks: {
                           callback: (value) => {
-                            return new Intl.NumberFormat('id-ID', {
-                              style: 'currency',
-                              currency: 'IDR',
+                            return 'Rp. ' + new Intl.NumberFormat('id-ID', {
                               notation: 'compact',
                               maximumFractionDigits: 0
                             }).format(value as number);
@@ -273,10 +304,10 @@ export default function DashboardPage() {
               <div className="h-72">
                 <Bar 
                   data={{
-                    labels: monthly.map(m => m.month),
+                    labels: monthly.map((m: any) => m.month),
                     datasets: [{
                       label: 'Jumlah Pesanan',
-                      data: monthly.map(m => m.orders),
+                      data: monthly.map((m: any) => m.orders),
                       backgroundColor: 'rgba(59, 130, 246, 0.8)',
                       borderRadius: 6,
                       hoverBackgroundColor: 'rgb(59, 130, 246)',
@@ -381,7 +412,7 @@ export default function DashboardPage() {
                     }, {});
                     
                     const labels = Object.keys(statusCount).map(s => s.charAt(0).toUpperCase() + s.slice(1));
-                    const data = Object.values(statusCount);
+                    const data = Object.values(statusCount) as number[];
                     
                     // We need to import Doughnut/Pie from react-chartjs-2 and register ArcElement
                     return (
@@ -430,10 +461,10 @@ export default function DashboardPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No.</th>
                   <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pemesan</th>
                   <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peserta</th>
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durasi/Unit</th>
                   <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 </tr>
@@ -452,14 +483,21 @@ export default function DashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  bookings.slice(0, 5).map((b) => (
+                  bookings.slice(0, 5).map((b, index) => (
                     <tr key={b.id} className="hover:bg-gray-50">
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{b.id}
+                        {index + 1}
                       </td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{b.customer_name}</div>
-                        <div className="text-xs text-gray-500">{b.customer_email}</div>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xs font-bold">
+                            {b.customer_name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900">{b.customer_name}</div>
+                            <div className="text-xs text-gray-500">{b.customer_email}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(b.trip_date).toLocaleDateString('id-ID', {
@@ -469,12 +507,10 @@ export default function DashboardPage() {
                         })}
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {b.total_participants} orang
-                      </td>
+                          {b.total_participants} Hari
+                        </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {new Intl.NumberFormat('id-ID', { 
-                          style: 'currency', 
-                          currency: 'IDR', 
+                        Rp. {new Intl.NumberFormat('id-ID', { 
                           maximumFractionDigits: 0 
                         }).format(b.total_amount)}
                       </td>

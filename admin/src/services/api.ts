@@ -12,9 +12,18 @@ const getDefaultBaseUrl = () => {
 };
 const API_BASE_URL = (import.meta.env?.VITE_API_URL as string) || getDefaultBaseUrl();
 
+export const getBackendOrigin = () => {
+  return API_BASE_URL.replace(/\/api$/, '');
+};
+
 async function authFetch(path: string, options: RequestInit = {}) {
   const headers = new Headers(options.headers || {});
-  headers.set('Content-Type', 'application/json');
+  
+  // Only set application/json if body is not FormData
+  if (!(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  
   try {
     let token: string | null = null;
     if (typeof window !== 'undefined') {
@@ -92,6 +101,14 @@ export type Booking = {
   total_participants: number;
   total_amount: number;
   payment_status: string;
+  travel_time?: string;
+  landing_time?: string;
+  airline?: string;
+  flight_code?: string;
+  terminal?: string;
+  pickup_address?: string;
+  dropoff_address?: string;
+  notes?: string;
   created_at: string;
 };
 
@@ -154,29 +171,92 @@ export const adminApi = {
     } as Package;
   },
 
-  createPackage: async (payload: Partial<Package> & { duration_days?: number; price?: number; price_per_person?: number }) => {
+  createPackage: async (payload: Partial<Package> & { duration_days?: number; price?: number; price_per_person?: number; primary_image_file?: File }) => {
+    const { primary_image_file, ...rest } = payload;
+    
+    if (primary_image_file) {
+      const formData = new FormData();
+      // Add all fields to FormData
+      Object.keys(rest).forEach(key => {
+        const value = (rest as any)[key];
+        if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      });
+      
+      // Ensure price and duration are correctly set for the backend
+      const price = rest.price ?? rest.price_per_person ?? 0;
+      formData.set('price', String(price));
+      
+      formData.append('primary_image', primary_image_file);
+      
+      return await authFetch('/packages', { 
+        method: 'POST', 
+        body: formData 
+      });
+    }
+
     const body = {
-      ...payload,
-      price: payload.price ?? payload.price_per_person ?? 0,
-      duration_days: payload.duration_days ?? 1,
+      ...rest,
+      price: rest.price ?? rest.price_per_person ?? 0,
+      duration_days: rest.duration_days ?? 1,
     };
     return await authFetch('/packages', { method: 'POST', body: JSON.stringify(body) });
   },
 
-  updatePackage: async (id: number, payload: Partial<Package>) => {
+  updatePackage: async (id: number, payload: Partial<Package> & { primary_image_file?: File }) => {
+    const { primary_image_file, ...rest } = payload;
+
+    if (primary_image_file) {
+      const formData = new FormData();
+      Object.keys(rest).forEach(key => {
+        const value = (rest as any)[key];
+        if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      });
+      
+      const price = rest.price ?? rest.price_per_person;
+      if (price !== undefined) {
+        formData.set('price', String(price));
+      }
+      
+      formData.append('primary_image', primary_image_file);
+
+      return await authFetch(`/packages/${id}`, { 
+        method: 'PUT', 
+        body: formData 
+      });
+    }
+
     const body = {
-      ...payload,
-      price: payload.price ?? payload.price_per_person,
+      ...rest,
+      price: rest.price ?? rest.price_per_person,
     };
-    return await authFetch(`/packages/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+    return await authFetch(`/packages/${id}`, { 
+      method: 'PUT', 
+      body: JSON.stringify(body) 
+    });
   },
 
   deletePackage: async (id: number) => {
     return await authFetch(`/packages/${id}`, { method: 'DELETE' });
   },
 
-  addImage: async (packageId: number, image_url: string, is_primary = false) => {
-    return await authFetch(`/packages/${packageId}/images`, { method: 'POST', body: JSON.stringify({ image_url, is_primary }) });
+  addImage: async (packageId: number, image: string | File, is_primary = false) => {
+    if (image instanceof File) {
+      const formData = new FormData();
+      formData.append('image', image);
+      formData.append('is_primary', String(is_primary));
+      return await authFetch(`/packages/${packageId}/images`, { 
+        method: 'POST', 
+        body: formData 
+      });
+    }
+    return await authFetch(`/packages/${packageId}/images`, { 
+      method: 'POST', 
+      body: JSON.stringify({ image_url: image, is_primary }) 
+    });
   },
 
   deleteImage: async (imageId: number) => {
@@ -219,9 +299,25 @@ export const adminApi = {
   getAdminStats: async (): Promise<{ success: boolean; data: AdminStats }> => {
     return await authFetch('/auth/admin/stats');
   },
+  resetRevenue: async (): Promise<{ success: boolean; message: string }> => {
+    return await authFetch('/auth/admin/stats/reset-revenue', { method: 'POST' });
+  },
 
   // Payment (admin)
   getPaymentByBooking: async (bookingId: number) => {
     return await authFetch(`/payment/by-booking/${bookingId}`)
+  },
+  
+  updateBookingStatus: async (id: number, status: string) => {
+    return await authFetch(`/bookings/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  },
+
+  deleteBooking: async (id: number) => {
+    return await authFetch(`/bookings/${id}`, {
+      method: 'DELETE'
+    });
   },
 };

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { adminApi, Package } from '../../services/api'
+import { adminApi, Package, getBackendOrigin } from '../../services/api'
 import { Link } from 'react-router-dom'
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState<Package[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
   
 
   const load = async () => {
@@ -14,8 +16,9 @@ export default function PackagesPage() {
     try {
       const data = await adminApi.getPackages()
       setPackages(Array.isArray(data) ? data : [])
+      setCurrentPage(1) // Reset ke halaman pertama saat data dimuat ulang
     } catch (e: any) {
-      setErrorMsg(e?.message || 'Gagal memuat paket')
+      setErrorMsg(e?.message || 'Gagal memuat layanan')
     } finally {
       setLoading(false)
     }
@@ -23,15 +26,27 @@ export default function PackagesPage() {
 
   useEffect(() => { load() }, [])
 
+  // Kalkulasi pagination
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentItems = packages.slice(indexOfFirstItem, indexOfLastItem)
+  const totalPages = Math.ceil(packages.length / itemsPerPage)
+
+  const paginate = (pageNumber: number) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber)
+    }
+  }
+
   
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Hapus paket ini?')) return
+    if (!confirm('Hapus layanan ini?')) return
     try {
       await adminApi.deletePackage(id)
       await load()
     } catch (e: any) {
-      alert(e?.message || 'Gagal menghapus paket')
+      alert(e?.message || 'Gagal menghapus layanan')
     }
   }
 
@@ -40,15 +55,15 @@ export default function PackagesPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Manajemen Paket Wisata</h1>
-            <p className="mt-1 text-sm text-gray-500">Kelola paket wisata yang tersedia untuk pemesanan</p>
+            <h1 className="text-2xl font-bold text-gray-900">Manajemen Layanan</h1>
+            <p className="mt-1 text-sm text-gray-500">Kelola layanan yang tersedia untuk pemesanan</p>
           </div>
           <div className="mt-4 md:mt-0">
             <Link to="/admin/packages/new" className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
               <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
               </svg>
-              Tambah Paket Baru
+              Tambah Layanan Baru
             </Link>
           </div>
         </div>
@@ -61,28 +76,28 @@ export default function PackagesPage() {
 
         <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
           <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Daftar Paket Wisata</h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">Semua paket wisata yang tersedia untuk dipesan</p>
+            <h3 className="text-lg leading-6 font-medium text-gray-900">Daftar Layanan</h3>
+            <p className="mt-1 max-w-2xl text-sm text-gray-500">Semua layanan yang tersedia untuk dipesan</p>
           </div>
           
           {loading ? (
             <div className="p-6 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-500">Memuat daftar paket...</p>
+              <p className="mt-2 text-sm text-gray-500">Memuat daftar layanan...</p>
             </div>
           ) : packages.length === 0 ? (
             <div className="p-6 text-center">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Belum ada paket</h3>
-              <p className="mt-1 text-sm text-gray-500">Mulai dengan menambahkan paket wisata baru.</p>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Belum ada layanan</h3>
+              <p className="mt-1 text-sm text-gray-500">Mulai dengan menambahkan layanan baru.</p>
               <div className="mt-6">
                 <Link to="/admin/packages/new" className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                   <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
                   </svg>
-                  Tambah Paket
+                  Tambah Layanan
                 </Link>
               </div>
             </div>
@@ -92,7 +107,8 @@ export default function PackagesPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paket</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No.</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layanan</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durasi</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
@@ -102,8 +118,11 @@ export default function PackagesPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {packages.map((pkg) => (
+                    {currentItems.map((pkg, index) => (
                       <tr key={pkg.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {indexOfFirstItem + index + 1}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden bg-gray-200">
@@ -111,11 +130,13 @@ export default function PackagesPage() {
                                 {pkg.primary_image ? (
                                   <img 
                                     className="h-20 w-20 rounded-md object-cover" 
-                                    src={pkg.primary_image} 
+                                    src={pkg.primary_image.startsWith('/') ? `${getBackendOrigin()}${encodeURI(pkg.primary_image)}` : pkg.primary_image} 
                                     alt={pkg.title}
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
-                                      target.src = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&q=80';
+                                      if (target.src.indexOf('placeholder-package.svg') === -1) {
+                                        target.src = '/admin/images/placeholder-package.svg';
+                                      }
                                     }}
                                   />
                                 ) : (
@@ -145,12 +166,10 @@ export default function PackagesPage() {
                               <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
                             ) : (
                               <>
-                                {new Intl.NumberFormat('id-ID', { 
-                                  style: 'currency', 
-                                  currency: 'IDR', 
+                                Rp. {new Intl.NumberFormat('id-ID', { 
                                   maximumFractionDigits: 0 
                                 }).format(Number(pkg.price_per_person) || 0)}
-                                <span className="text-gray-500 text-xs"> / orang</span>
+                                <span className="text-gray-500 text-xs"> / hari</span>
                               </>
                             )}
                           </div>
@@ -183,50 +202,75 @@ export default function PackagesPage() {
                 </table>
               </div>
               
-              {/* Pagination would go here */}
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <a href="#" className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Sebelumnya
-                  </a>
-                  <a href="#" className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Selanjutnya
-                  </a>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Menampilkan <span className="font-medium">1</span> sampai <span className="font-medium">{packages.length}</span> dari{' '}
-                      <span className="font-medium">{packages.length}</span> hasil
-                    </p>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                      onClick={() => paginate(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Sebelumnya
+                    </button>
+                    <button
+                      onClick={() => paginate(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Selanjutnya
+                    </button>
                   </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                      <a href="#" className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                        <span className="sr-only">Previous</span>
-                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </a>
-                      <a href="#" aria-current="page" className="z-10 bg-indigo-50 border-indigo-500 text-indigo-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                        1
-                      </a>
-                      <a href="#" className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                        2
-                      </a>
-                      <a href="#" className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                        3
-                      </a>
-                      <a href="#" className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                        <span className="sr-only">Next</span>
-                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </a>
-                    </nav>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Menampilkan <span className="font-medium">{indexOfFirstItem + 1}</span> sampai{' '}
+                        <span className="font-medium">{Math.min(indexOfLastItem, packages.length)}</span> dari{' '}
+                        <span className="font-medium">{packages.length}</span> hasil
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button
+                          onClick={() => paginate(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <span className="sr-only">Previous</span>
+                          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        
+                        {[...Array(totalPages)].map((_, i) => (
+                          <button
+                            key={i + 1}
+                            onClick={() => paginate(i + 1)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === i + 1
+                                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
+
+                        <button
+                          onClick={() => paginate(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <span className="sr-only">Next</span>
+                          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </nav>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>

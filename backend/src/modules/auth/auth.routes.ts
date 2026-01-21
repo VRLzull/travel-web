@@ -63,6 +63,10 @@ adminRouter.get('/stats', (req: Request, res: Response) => {
   return authController.getAdminStats(req, res);
 });
 
+adminRouter.post('/stats/reset-revenue', (req: Request, res: Response) => {
+  return authController.resetRevenue(req, res);
+});
+
 // Gunakan router admin untuk path /admin
 router.use('/admin', adminRouter);
 

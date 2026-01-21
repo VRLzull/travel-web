@@ -2,7 +2,7 @@
 
 import { Response } from "express";
 import crypto from "crypto";
-import { createMidtransTransaction, updatePaymentAndBookingStatus, PaymentResult } from "./payment.service";
+import { createMidtransTransaction, updatePaymentAndBookingStatus, manualCreatePayment, PaymentResult } from "./payment.service";
 import { env } from "../../config/env";
 import { pool } from "../../config/db";
 import { IAuthRequest } from "../../types/user";
@@ -299,3 +299,59 @@ export const getPaymentByBooking = async (req: IAuthRequest, res: Response) => {
 
 // Alias untuk kompatibilitas
 export const midtransNotificationHandler = handleNotification;
+
+export const manualPaymentCreateHandler = async (req: IAuthRequest, res: Response) => {
+  try {
+    const { booking_id, final_status, amount, note } = req.body as {
+      booking_id: number;
+      final_status?: 'pending' | 'paid' | 'expired' | 'cancelled';
+      amount?: number;
+      note?: string;
+    };
+
+    if (!booking_id || !Number.isFinite(Number(booking_id))) {
+      return res.status(400).json({ success: false, message: 'booking_id tidak valid' });
+    }
+
+    const isAdmin = req.role === 'ADMIN' || req.role === 'SUPERADMIN';
+    if (!isAdmin) {
+      return res.status(403).json({ success: false, message: 'Akses ditolak' });
+    }
+
+    const result = await manualCreatePayment(Number(booking_id), final_status || 'paid', amount, note || '');
+    return res.json({
+      success: true,
+      message: 'Manual payment created/updated',
+      data: { order_id: result.order_id }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Gagal membuat pembayaran manual' });
+  }
+};
+
+export const manualPaymentUpdateHandler = async (req: IAuthRequest, res: Response) => {
+  try {
+    const { order_id, final_status, note } = req.body as {
+      order_id: string;
+      final_status: 'pending' | 'paid' | 'expired' | 'cancelled';
+      note?: string;
+    };
+
+    if (!order_id || typeof order_id !== 'string') {
+      return res.status(400).json({ success: false, message: 'order_id tidak valid' });
+    }
+    if (!final_status) {
+      return res.status(400).json({ success: false, message: 'final_status diperlukan' });
+    }
+
+    const isAdmin = req.role === 'ADMIN' || req.role === 'SUPERADMIN';
+    if (!isAdmin) {
+      return res.status(403).json({ success: false, message: 'Akses ditolak' });
+    }
+
+    await updatePaymentAndBookingStatus(order_id, final_status, { note: note || 'manual update' });
+    return res.json({ success: true, message: 'Status pembayaran diupdate' });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Gagal mengupdate pembayaran manual' });
+  }
+};

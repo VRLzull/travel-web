@@ -43,6 +43,7 @@ export async function getAllPackages() {
          (SELECT image_url FROM package_images WHERE package_id = p.id LIMIT 1)
        ) AS primary_image
      FROM tour_packages p
+     WHERE p.is_active = 1
      ORDER BY p.created_at DESC`
   );
 
@@ -165,6 +166,180 @@ export async function createPackage(packageData: any) {
   }
 }
 
+export async function resetTravelPackages(): Promise<{ success: boolean; inserted: number }> {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Soft-disable semua paket lama
+    await connection.query(
+      `UPDATE tour_packages SET is_active = 0, updated_at = NOW() WHERE is_active = 1`
+    );
+
+    // Ubah slug paket lama agar tidak bentrok dengan paket baru
+    await connection.query(
+      `UPDATE tour_packages SET slug = CONCAT(slug, '-', UNIX_TIMESTAMP()) WHERE is_active = 0`
+    );
+
+    const basePackages = [
+      {
+        title: 'Travel Malang - Surabaya',
+        location: 'Malang, Surabaya',
+        city: 'Malang',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 150000,
+        max_people: 5,
+        description: 'Layanan travel reguler rute Malang ke Surabaya. Harga berlaku per hari.',
+        is_featured: true,
+        category: 'travel_reguler',
+        short_description: 'Travel Malang - Surabaya (per hari)',
+      },
+      {
+        title: 'Travel Malang - Juanda',
+        location: 'Malang, Juanda',
+        city: 'Malang',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 150000,
+        max_people: 5,
+        description: 'Layanan travel reguler rute Malang ke Bandara Juanda. Harga berlaku per hari.',
+        is_featured: true,
+        category: 'travel_reguler',
+        short_description: 'Travel Malang - Juanda (per hari)',
+      },
+      {
+        title: 'Travel Malang - Kediri',
+        location: 'Malang, Kediri',
+        city: 'Malang',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 130000,
+        max_people: 5,
+        description: 'Layanan travel reguler rute Malang ke Kediri. Harga berlaku per hari.',
+        is_featured: true,
+        category: 'travel_reguler',
+        short_description: 'Travel Malang - Kediri (per hari)',
+      },
+      {
+        title: 'Travel Surabaya - Kediri',
+        location: 'Surabaya, Kediri',
+        city: 'Surabaya',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 180000,
+        max_people: 5,
+        description: 'Layanan travel reguler rute Surabaya ke Kediri. Harga berlaku per hari.',
+        is_featured: true,
+        category: 'travel_reguler',
+        short_description: 'Travel Surabaya - Kediri (per hari)',
+      },
+      {
+        title: 'Sewa Mobil Lepas Kunci',
+        location: 'Malang, Surabaya',
+        city: 'Malang',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 300000,
+        max_people: 7,
+        description: 'Sewa mobil harian tanpa driver (Lepas Kunci). Harga belum termasuk BBM, Tol, Parkir.',
+        is_featured: false,
+        category: 'sewa_mobil',
+        short_description: 'Sewa mobil harian lepas kunci',
+      },
+      {
+        title: 'Sewa Mobil + Driver',
+        location: 'Malang, Surabaya',
+        city: 'Malang',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 500000,
+        max_people: 6,
+        description: 'Sewa mobil harian sudah termasuk Driver. Harga belum termasuk BBM, Tol, Parkir.',
+        is_featured: false,
+        category: 'sewa_mobil',
+        short_description: 'Sewa mobil harian + Driver',
+      },
+      {
+        title: 'Sewa Hiace',
+        location: 'Malang, Surabaya',
+        city: 'Malang',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 1200000,
+        max_people: 14,
+        description: 'Sewa unit Toyota Hiace harian. Harga belum termasuk BBM, Tol, Parkir.',
+        is_featured: false,
+        category: 'sewa_mobil',
+        short_description: 'Sewa Hiace harian',
+      },
+      {
+        title: 'Sewa Elf Long',
+        location: 'Malang, Surabaya',
+        city: 'Malang',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 1000000,
+        max_people: 19,
+        description: 'Sewa unit Isuzu Elf Long harian. Harga belum termasuk BBM, Tol, Parkir.',
+        is_featured: false,
+        category: 'sewa_mobil',
+        short_description: 'Sewa Elf Long harian',
+      },
+      {
+        title: 'Sewa Elf Short',
+        location: 'Malang, Surabaya',
+        city: 'Malang',
+        country: 'Indonesia',
+        duration_days: 1,
+        price: 800000,
+        max_people: 12,
+        description: 'Sewa unit Isuzu Elf Short harian. Harga belum termasuk BBM, Tol, Parkir.',
+        is_featured: false,
+        category: 'sewa_mobil',
+        short_description: 'Sewa Elf Short harian',
+      }
+    ];
+
+    let inserted = 0;
+    for (const pkg of basePackages) {
+      const [result] = await connection.query(
+        `INSERT INTO tour_packages (
+          title, slug, location, city, country, duration_days,
+          price, max_people, description, is_featured,
+          category, short_description, itinerary, facilities, is_active, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW()
+        )`,
+        [
+          pkg.title,
+          pkg.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^\-|\-$)/g, ''),
+          pkg.location,
+          pkg.city,
+          pkg.country,
+          pkg.duration_days,
+          pkg.price,
+          pkg.max_people,
+          pkg.description,
+          pkg.is_featured ? 1 : 0,
+          pkg.category,
+          pkg.short_description || '',
+          null,
+          null
+        ]
+      ) as any;
+      if ((result as any).insertId) inserted++;
+    }
+
+    await connection.commit();
+    return { success: true, inserted };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
 export async function updatePackage(
   id: number,
   packageData: Partial<Omit<TourPackage, 'id' | 'slug'>>

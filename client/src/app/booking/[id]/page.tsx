@@ -16,11 +16,21 @@ export default function BookingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams();
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'whatsapp'>('online');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     notes: ''
+  });
+  const [tripDetails, setTripDetails] = useState({
+    travelTime: '',
+    landingTime: '',
+    airline: '',
+    flightCode: '',
+    terminal: '',
+    pickupAddress: '',
+    dropoffAddress: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -145,6 +155,14 @@ export default function BookingPage() {
         customer_email: formData.email,
         customer_phone: formData.phone,
         total_participants: participants,
+        travel_time: tripDetails.travelTime,
+        landing_time: tripDetails.landingTime,
+        airline: tripDetails.airline,
+        flight_code: tripDetails.flightCode,
+        terminal: tripDetails.terminal,
+        pickup_address: tripDetails.pickupAddress,
+        dropoff_address: tripDetails.dropoffAddress,
+        notes: formData.notes,
       });
       console.log('Booking berhasil dibuat:', booking);
       try {
@@ -176,14 +194,51 @@ export default function BookingPage() {
         setErrorMsg('Gagal mendapatkan booking_id dari server. Coba lagi atau hubungi admin.');
         return;
       }
-      const payment = await apiClient.createPayment(Number(bookingId));
-      try {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('last_order_id', payment.data.order_id || '');
+      if (paymentMethod === 'online') {
+        const payment = await apiClient.createPayment(Number(bookingId));
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('last_order_id', payment.data.order_id || '');
+          }
+        } catch {}
+        console.log('Redirect ke halaman pembayaran:', payment.data.redirect_url, 'Order ID:', payment.data.order_id);
+        window.location.href = payment.data.redirect_url;
+      } else {
+        const number = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '').replace(/[^0-9]/g, '');
+        if (!number) {
+          setIsSubmitting(false);
+          setErrorMsg('Nomor WhatsApp belum dikonfigurasi. Set NEXT_PUBLIC_WHATSAPP_NUMBER di .env.local');
+          return;
         }
-      } catch {}
-      console.log('Redirect ke halaman pembayaran:', payment.data.redirect_url, 'Order ID:', payment.data.order_id);
-      window.location.href = payment.data.redirect_url;
+        const routeName = packageData?.title || packageData?.location || 'Paket Travel';
+        const lines = [
+          `*PESANAN BARU - ${paymentMethod === 'whatsapp' ? 'CASH' : 'ONLINE'}*`,
+          '',
+          `Order ID: ${bookingId}`,
+          `Paket: ${routeName}`,
+          `Hari/Tgl: ${formatDate(departureDate)}`,
+          `Nama: ${formData.fullName}`,
+          `No.Telp: ${formData.phone}`,
+          `Metode Bayar: ${paymentMethod === 'whatsapp' ? 'Cash ke Driver' : 'Online (Midtrans)'}`,
+          '',
+          tripDetails.travelTime && `Jam Travel: ${tripDetails.travelTime}`,
+          tripDetails.landingTime && `Jam Landing : ${tripDetails.landingTime}`,
+          `Durasi / Unit : ${participants} hari`,
+          tripDetails.airline && `Maskapai : ${tripDetails.airline}`,
+          tripDetails.flightCode && `Kode penerbangan : ${tripDetails.flightCode}`,
+          tripDetails.terminal && `Terminal : ${tripDetails.terminal}`,
+          tripDetails.pickupAddress && `Alamat Penjemputan : ${tripDetails.pickupAddress}`,
+          tripDetails.dropoffAddress && `Alamat Tujuan : ${tripDetails.dropoffAddress}`,
+          '',
+          (formData.notes || '').trim() && `Catatan: ${formData.notes.trim()}`,
+          '',
+          'Terimakasih 🙏'
+        ].filter(Boolean) as string[];
+        const text = encodeURIComponent(lines.join('\n'));
+        const url = `https://wa.me/${number}?text=${text}`;
+        window.open(url, '_blank');
+        router.push('/orders');
+      }
     } catch (e: unknown) {
       setIsSubmitting(false);
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -242,6 +297,31 @@ export default function BookingPage() {
               )}
               
               <form onSubmit={handleSubmit}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Metode Pembayaran
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        checked={paymentMethod === 'online'}
+                        onChange={() => setPaymentMethod('online')}
+                      />
+                      Bayar Online (Midtrans)
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        checked={paymentMethod === 'whatsapp'}
+                        onChange={() => setPaymentMethod('whatsapp')}
+                      />
+                      Bayar Cash (ke Driver/Sopir)
+                    </label>
+                  </div>
+                </div>
                 <div className="mb-4">
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                     Nama Lengkap <span className="text-red-500">*</span>
@@ -319,6 +399,61 @@ export default function BookingPage() {
                   </div>
                 </div>
                 
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Detail Perjalanan (opsional)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Jam Travel (contoh: 10:50)"
+                      value={tripDetails.travelTime}
+                      onChange={(e) => setTripDetails(prev => ({ ...prev, travelTime: e.target.value }))}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Jam Landing (contoh: 10:40)"
+                      value={tripDetails.landingTime}
+                      onChange={(e) => setTripDetails(prev => ({ ...prev, landingTime: e.target.value }))}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Maskapai (contoh: Lion Air)"
+                      value={tripDetails.airline}
+                      onChange={(e) => setTripDetails(prev => ({ ...prev, airline: e.target.value }))}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Kode Penerbangan (contoh: QG 715)"
+                      value={tripDetails.flightCode}
+                      onChange={(e) => setTripDetails(prev => ({ ...prev, flightCode: e.target.value }))}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Terminal"
+                      value={tripDetails.terminal}
+                      onChange={(e) => setTripDetails(prev => ({ ...prev, terminal: e.target.value }))}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Alamat Penjemputan"
+                      value={tripDetails.pickupAddress}
+                      onChange={(e) => setTripDetails(prev => ({ ...prev, pickupAddress: e.target.value }))}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Alamat Tujuan / Pengantaran"
+                      value={tripDetails.dropoffAddress}
+                      onChange={(e) => setTripDetails(prev => ({ ...prev, dropoffAddress: e.target.value }))}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+                
                 <div className="mb-6">
                   <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
                     Catatan Tambahan (Opsional)
@@ -377,10 +512,10 @@ export default function BookingPage() {
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Jumlah Peserta</span>
+                  <span className="text-sm text-gray-600">Durasi / Unit</span>
                   <div className="text-sm font-medium text-gray-900 flex items-center">
                     <FiUsers className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" />
-                    {participants} Orang
+                    {participants} Hari
                   </div>
                 </div>
                 

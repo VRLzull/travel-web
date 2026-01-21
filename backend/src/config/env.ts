@@ -16,4 +16,14 @@ export const env = {
   midtransClientKey: process.env.MIDTRANS_CLIENT_KEY || "",
   jwtSecret: process.env.JWT_SECRET || "supersecretjwt",
   midtransIsProduction: String(process.env.MIDTRANS_IS_PRODUCTION || "false").toLowerCase() === "true",
+  whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN || "",
+  whatsappVerifyToken: process.env.WHATSAPP_VERIFY_TOKEN || "",
+  whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
+  waProvider: (process.env.WA_PROVIDER || "meta").toLowerCase(),
+  twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || "",
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || "",
+  twilioWhatsAppFrom: process.env.TWILIO_WHATSAPP_FROM || "",
+  chatbotApiKey: process.env.CHATBOT_API_KEY || "",
+  chatbotApiEndpoint: process.env.CHATBOT_API_ENDPOINT || "",
+  isLocalBot: process.env.WA_PROVIDER === 'local'
 };

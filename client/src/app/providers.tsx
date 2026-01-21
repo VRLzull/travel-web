@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 // Gunakan dynamic import untuk komponen yang memerlukan browser API
 const Navbar = dynamic(() => import('@/components/layout/Navbar'), { ssr: false });
 const Footer = dynamic(() => import('@/components/layout/Footer'), { ssr: false });
+const WhatsAppWidget = dynamic(() => import('@/components/whatsapp/WhatsAppWidget'), { ssr: false });
 
 interface ProvidersProps {
   children: ReactNode;
@@ -20,6 +21,7 @@ export function Providers({ children }: ProvidersProps) {
         {children}
       </main>
       <Footer />
+      <WhatsAppWidget />
     </>
   );
 }

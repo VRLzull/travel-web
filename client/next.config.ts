@@ -10,8 +10,8 @@ const nextConfig: NextConfig = {
   // Konfigurasi untuk mengizinkan gambar dari domain eksternal
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**', port: '', pathname: '/**' },
-      { protocol: 'http', hostname: '**', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: '**', pathname: '/**' },
+      { protocol: 'http', hostname: '**', pathname: '/**' },
     ],
   },
   experimental: {

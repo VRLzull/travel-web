@@ -61,7 +61,7 @@ export const BookingForm = ({ packageData }: BookingFormProps) => {
     }
     
     if (formData.participantCount < 1) {
-      newErrors.participantCount = 'Jumlah peserta minimal 1';
+      newErrors.participantCount = 'Durasi/Unit minimal 1';
     }
     
     setErrors(newErrors);
@@ -91,7 +91,7 @@ export const BookingForm = ({ packageData }: BookingFormProps) => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Form Pemesanan Paket Wisata</h1>
+        <h1 className="text-3xl font-bold mb-8">Form Pemesanan Layanan</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Pemesanan */}
@@ -200,7 +200,7 @@ export const BookingForm = ({ packageData }: BookingFormProps) => {
 
                   <div>
                     <label className="block text-gray-700 mb-2" htmlFor="participantCount">
-                      Jumlah Peserta <span className="text-red-500">*</span>
+                      Durasi / Unit (Hari) <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -263,12 +263,12 @@ export const BookingForm = ({ packageData }: BookingFormProps) => {
               
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Harga per orang</span>
+                  <span className="text-gray-600">Harga per hari</span>
                   <span>{formatPrice(packageData.price)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Jumlah Peserta</span>
-                  <span>{formData.participantCount} orang</span>
+                  <span className="text-gray-600">Durasi / Unit</span>
+                  <span>{formData.participantCount} hari</span>
                 </div>
                 <div className="flex justify-between font-semibold text-lg pt-2 border-t border-gray-200">
                   <span>Total Harga</span>

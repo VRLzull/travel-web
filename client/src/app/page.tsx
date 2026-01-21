@@ -18,20 +18,23 @@ const HERO_SLIDES = [
   {
     id: 1,
     title: 'Temukan Petualangan Terbaikmu',
-    description: 'Jelajahi paket wisata pilihan dengan harga terjangkau dan pengalaman tak terlupakan.',
-    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1600&auto=format&fit=crop',
+    description: 'Jelajahi layanan pilihan dengan harga terjangkau dan pengalaman tak terlupakan.',
+    image: '/packages/bali.webp',
+    video: '/videos/WhatsApp Video 2026-01-08 at 5.34.04 PM.mp4',
   },
   {
     id: 2,
     title: 'Eksplorasi Keajaiban Alam Indonesia',
     description: 'Nikmati keindahan pantai, pegunungan, dan budaya lokal yang memukau.',
-    image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?q=80&w=1600&auto=format&fit=crop',
+    image: '/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM (1).jpeg',
+    video: '/videos/WhatsApp Video 2026-01-08 at 5.36.59 PM.mp4',
   },
   {
     id: 3,
     title: 'Momen Tak Terlupakan Bersama Kami',
     description: 'Rencanakan perjalanan impianmu sekarang dengan layanan terbaik kami.',
-    image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop',
+    image: '/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM.jpeg',
+    video: '/videos/WhatsApp Video 2026-01-08 at 5.34.04 PM.mp4',
   }
 ];
 
@@ -46,7 +49,7 @@ export default function HomePage() {
         const data = await apiClient.getPackages();
         setPackages(data.slice(0, 6));
       } catch {
-        setErrorMsg('Gagal memuat paket populer.');
+        setErrorMsg('Gagal memuat layanan populer.');
       } finally {
         setLoading(false);
       }
@@ -74,6 +77,12 @@ export default function HomePage() {
     }
   };
 
+  const getHeroImage = (path: string) => {
+    const api = process.env.NEXT_PUBLIC_API_URL as string | undefined;
+    const origin = api ? api.replace(/\/api$/, '') : (typeof window !== 'undefined' ? `http://${window.location.hostname}:4000` : 'http://localhost:4000');
+    return `${origin}${path}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section with Carousel */}
@@ -93,14 +102,25 @@ export default function HomePage() {
           {HERO_SLIDES.map((slide) => (
             <SwiperSlide key={slide.id}>
               <div className="relative h-full w-full">
-                {/* Background Image */}
-                <Image
-                  src={slide.image}
-                  alt={slide.title}
-                  fill
-                  className="object-cover"
-                  priority
-                />
+                {/* Background Image or Video */}
+                {slide.video ? (
+                  <video
+                    className="absolute inset-0 w-full h-full object-cover"
+                    src={slide.video}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <Image
+                    src={getHeroImage(slide.image)}
+                    alt={slide.title}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                )}
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-black/40" />
                 
@@ -118,7 +138,7 @@ export default function HomePage() {
                         href="/paket-wisata" 
                         className="inline-block bg-blue-600 text-white font-semibold px-8 py-3 rounded-full hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg"
                       >
-                        Lihat Paket
+                        Lihat Layanan
                       </Link>
                     </div>
                   </div>
@@ -132,8 +152,8 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Paket Populer</h2>
-            <p className="text-gray-600 mt-2">Pilihan terbaik untuk liburan tak terlupakan</p>
+            <h2 className="text-3xl font-bold text-gray-900">Layanan Populer</h2>
+            <p className="text-gray-600 mt-2">Pilihan terbaik untuk perjalanan tak terlupakan</p>
           </div>
           <Link href="/paket-wisata" className="text-blue-600 font-semibold hover:underline">
             Lihat semua &rarr;
@@ -150,19 +170,28 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {packages.map((pkg) => (
-              <PackageCard
-                key={pkg.id}
-                id={pkg.id}
-                title={pkg.title}
-                location={pkg.location}
-                price={pkg.price}
-                duration={`${pkg.duration_days} Hari`}
-                imageUrl={pkg.primary_image || ''}
-                href={`/paket-wisata/${pkg.slug}`}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
+            {packages.map((pkg) => {
+              const category = (pkg.category || '').toLowerCase().trim();
+              const categoryImageMap: Record<string, string> = {
+                travel_reguler: '/packages/bali.webp',
+                carter: '/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM (1).jpeg',
+                sewa_mobil: '/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM.jpeg',
+              };
+              const imageUrl = pkg.primary_image || categoryImageMap[category] || '';
+              return (
+                <PackageCard
+                  key={pkg.id}
+                  id={pkg.id}
+                  title={pkg.title}
+                  location={pkg.location}
+                  price={pkg.price}
+                  duration={`${pkg.duration_days} Hari`}
+                  imageUrl={imageUrl}
+                  href={`/paket-wisata/${pkg.slug}`}
+                  onAddToCart={handleAddToCart}
+                />
+              );
+            })}
           </div>
         )}
       </div>

@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { FiMapPin, FiClock, FiCalendar, FiShoppingCart } from 'react-icons/fi';
 import { useParams } from 'next/navigation';
 import { apiClient, type PackageDetail, type Package } from '@/lib/api';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 // Interface untuk tipe data schedule
 interface Schedule {
@@ -25,6 +27,7 @@ export default function PackageDetail() {
   const params = useParams();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [manualDate, setManualDate] = useState<Date | null>(null);
   const [participants, setParticipants] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -38,7 +41,7 @@ export default function PackageDetail() {
     isDefault?: boolean;
   }>>([]);
   // Use local placeholder image
-  const placeholder = '/images/placeholder-package.svg';
+  const placeholder = '/packages/placeholder-package.svg';
 
   useEffect(() => {
     const load = async () => {
@@ -47,7 +50,7 @@ export default function PackageDetail() {
         const list = await apiClient.getPackages();
         const base = list.find((p: Package) => p.slug === slug);
         if (!base) {
-          setErrorMsg('Paket tidak ditemukan');
+          setErrorMsg('Layanan tidak ditemukan');
           setIsLoading(false);
           return;
         }
@@ -118,7 +121,14 @@ export default function PackageDetail() {
           .filter((url, index, self) => self.indexOf(url) === index);
         
         console.log('All valid images to display:', allImages);
-        setImages(allImages.length > 0 ? allImages : [placeholder]);
+        const categoryImageMap: Record<string, string> = {
+          travel_reguler: '/packages/bali.webp',
+          carter: '/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM (1).jpeg',
+          sewa_mobil: '/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM.jpeg',
+        };
+        const cat = String((d as any)?.category || '').toLowerCase();
+        const fallback = categoryImageMap[cat] || placeholder;
+        setImages(allImages.length > 0 ? allImages : [fallback]);
         
         // Debug log untuk data lengkap dari API
         console.log('Data paket dari API:', d);
@@ -175,7 +185,7 @@ export default function PackageDetail() {
         setAvailability(availableSchedules);
       } catch {
         const apiBase = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:4000/api` : '');
-        setErrorMsg(`Gagal memuat detail paket dari ${apiBase}.`);
+        setErrorMsg(`Gagal memuat detail layanan dari ${apiBase}.`);
       } finally {
         setIsLoading(false);
       }
@@ -310,7 +320,7 @@ export default function PackageDetail() {
                   <>
                     <Image
                       src={images[selectedImage]}
-                      alt={detail?.title || 'Gambar paket wisata'}
+                      alt={detail?.title || 'Gambar layanan'}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 50vw"
@@ -448,7 +458,7 @@ export default function PackageDetail() {
               <div className="mb-4">
                 <div className="text-2xl font-bold text-blue-600">
                   {detail?.price ? formatPrice(detail.price) : 'Rp 0'}
-                  <span className="text-sm font-normal text-gray-500"> / orang</span>
+                  <span className="text-sm font-normal text-gray-500"> / hari</span>
                 </div>
                 <div className="text-sm text-gray-500">Harga sudah termasuk PPN</div>
                 {process.env.NODE_ENV === 'development' && (
@@ -462,6 +472,24 @@ export default function PackageDetail() {
                 <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
                   Pilih Tanggal Keberangkatan
                 </label>
+                <div className="mb-3">
+                  <DatePicker
+                    selected={manualDate}
+                    onChange={(d) => {
+                      setManualDate(d);
+                      if (d) {
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        setSelectedDate(`${y}-${m}-${dd}`);
+                      }
+                    }}
+                    minDate={new Date()}
+                    dateFormat="yyyy-MM-dd"
+                    placeholderText="Pilih tanggal bebas"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                   {isLoading ? (
                     <div className="text-center py-4">
@@ -486,7 +514,7 @@ export default function PackageDetail() {
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-sm text-gray-600">
                             {avail.quota > 0 ? (
-                              <span className="text-green-600">Tersedia {avail.quota} kursi</span>
+                              <span className="text-green-600">Tersedia {avail.quota} unit</span>
                             ) : (
                               <span className="text-red-600">Habis</span>
                             )}
@@ -499,8 +527,7 @@ export default function PackageDetail() {
                     ))
                   ) : (
                     <div className="text-center py-4 text-gray-500">
-                      <p>Tidak ada jadwal tersedia</p>
-                      <p className="text-xs mt-1">Silakan coba lagi nanti atau hubungi admin</p>
+                      <p>Tidak ada jadwal tersedia, pilih tanggal bebas di atas</p>
                     </div>
                   )}
                 </div>
@@ -508,7 +535,7 @@ export default function PackageDetail() {
 
               <div className="mb-6">
                 <label htmlFor="participants" className="block text-sm font-medium text-gray-700 mb-2">
-                  Jumlah Peserta
+                  Durasi / Unit (Hari)
                 </label>
                 <div className="mt-1 flex rounded-md shadow-sm">
                   <button
@@ -533,7 +560,7 @@ export default function PackageDetail() {
 
               <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-800">Harga per orang</span>
+                  <span className="text-sm text-gray-800">Harga per hari</span>
                   <span className="text-sm font-medium text-gray-900">
                     {new Intl.NumberFormat('id-ID', {
                       style: 'currency',

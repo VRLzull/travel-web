@@ -85,7 +85,7 @@ Authorization: Bearer YOUR_ADMIN_TOKEN
 Content-Type: application/json
 
 {
-  "title": "Paket Wisata Bali 3D2N",
+  "title": "Layanan Bali 3D2N",
   "location": "Bali, Indonesia",
   "category": "Domestic",
   "duration_days": 3,
@@ -103,7 +103,7 @@ Authorization: Bearer YOUR_ADMIN_TOKEN
 Content-Type: application/json
 
 {
-  "title": "Paket Wisata Bali 4D3N",
+  "title": "Layanan Bali 4D3N",
   "price_per_person": 3000000
 }
 ```
@@ -206,7 +206,7 @@ Content-Type: application/json
 - `customer_name` (string) - Nama customer
 - `customer_email` (string) - Email customer (format email valid)
 - `customer_phone` (string) - Nomor telepon customer
-- `total_participants` (number) - Jumlah peserta (harus > 0)
+- `total_participants` (number) - Durasi/Unit (harus > 0)
 
 **Optional Fields:**
 - `schedule_id` (number) - ID schedule jika menggunakan jadwal tertentu
@@ -369,7 +369,7 @@ curl -X POST http://localhost:4000/api/packages \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{
-    "title": "Paket Wisata Lombok",
+    "title": "Layanan Lombok",
     "location": "Lombok, Indonesia",
     "category": "Domestic",
     "duration_days": 4,

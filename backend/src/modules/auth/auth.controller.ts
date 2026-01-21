@@ -172,17 +172,28 @@ export const resetUserPassword = async (req: Request, res: Response) => {
 
 export const getAdminStats = async (_req: Request, res: Response) => {
   try {
+    // Ambil tanggal reset dari settings
+    const [settingsRows] = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'revenue_reset_date'") as any;
+    const resetDate = settingsRows?.[0]?.setting_value || '2000-01-01 00:00:00';
+
     const [usersCountRows] = await pool.query('SELECT COUNT(*) AS count FROM users') as any;
     const [ordersCountRows] = await pool.query('SELECT COUNT(*) AS count FROM bookings') as any;
-    const [revenueRows] = await pool.query("SELECT COALESCE(SUM(total_amount),0) AS total FROM bookings WHERE payment_status = 'paid'") as any;
+    
+    // Revenue difilter berdasarkan tanggal reset
+    const [revenueRows] = await pool.query(
+      "SELECT COALESCE(SUM(total_amount),0) AS total FROM bookings WHERE payment_status = 'paid' AND created_at >= ?",
+      [resetDate]
+    ) as any;
+
     const [monthlyRows] = await pool.query(
       `SELECT DATE_FORMAT(created_at, '%Y-%m') AS month,
               COUNT(*) AS orders,
-              SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END) AS revenue
+              SUM(CASE WHEN payment_status = 'paid' AND created_at >= ? THEN total_amount ELSE 0 END) AS revenue
        FROM bookings
        GROUP BY DATE_FORMAT(created_at, '%Y-%m')
        ORDER BY month DESC
-       LIMIT 12`
+       LIMIT 12`,
+      [resetDate]
     ) as any;
     const monthly = (monthlyRows as any[]).reverse();
     res.json({
@@ -191,11 +202,25 @@ export const getAdminStats = async (_req: Request, res: Response) => {
         total_users: usersCountRows?.[0]?.count || 0,
         total_orders: ordersCountRows?.[0]?.count || 0,
         total_revenue: Number(revenueRows?.[0]?.total || 0),
-        monthly
+        monthly,
+        reset_date: resetDate
       }
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Gagal mengambil statistik' });
+  }
+};
+
+export const resetRevenue = async (_req: Request, res: Response) => {
+  try {
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    await pool.query(
+      "UPDATE settings SET setting_value = ? WHERE setting_key = 'revenue_reset_date'",
+      [now]
+    );
+    res.json({ success: true, message: 'Data pendapatan telah di-reset ke nol.' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Gagal reset pendapatan' });
   }
 };
 

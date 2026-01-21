@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { FiFacebook, FiTwitter, FiInstagram, FiMail, FiPhone } from 'react-icons/fi';
 
 const Footer = () => {
@@ -9,9 +10,9 @@ const Footer = () => {
       title: 'Perusahaan',
       links: [
         { name: 'Tentang Kami', href: '/tentang-kami' },
-        { name: 'Tim Kami', href: '/tim-kami' },
-        { name: 'Karir', href: '/karir' },
-        { name: 'Blog', href: '/blog' },
+        // { name: 'Tim Kami', href: '/tim-kami' },
+        // { name: 'Karir', href: '/karir' },
+        // { name: 'Blog', href: '/blog' },
       ],
     },
     {
@@ -26,10 +27,10 @@ const Footer = () => {
     {
       title: 'Layanan',
       links: [
-        { name: 'Paket Wisata', href: '/paket-wisata' },
-        { name: 'Sewa Mobil', href: '/sewa-mobil' },
-        { name: 'Pemandu Wisata', href: '/pemandu-wisata' },
-        { name: 'Akomodasi', href: '/akomodasi' },
+        { name: 'Layanan Travel', href: '/paket-wisata' },
+        // { name: 'Sewa Mobil', href: '/sewa-mobil' },
+        // { name: 'Pemandu Wisata', href: '/pemandu-wisata' },
+        // { name: 'Akomodasi', href: '/akomodasi' },
       ],
     },
   ];
@@ -39,20 +40,26 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8 xl:col-span-1">
-            <h2 className="text-2xl font-bold">TourKu</h2>
+            <Image 
+              src="/faraday-tour-and-travel.png" 
+              alt="Faraday Tour Logo" 
+              width={180} 
+              height={50} 
+              className="h-12 w-auto brightness-0 invert"
+            />
             <p className="text-gray-300 text-sm">
               Temukan pengalaman wisata terbaik dengan harga terjangkau di seluruh Indonesia.
             </p>
             <div className="flex space-x-6">
-              <a href="#" className="text-gray-400 hover:text-white">
+              <a href="https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.facebook.com/faraday.travel/&ved=2ahUKEwjA9q3H6vqRAxWb3jgGHXWEJy8QFnoECCAQAQ&usg=AOvVaw3MHGHFi_luVCzKBza_0mDN" className="text-gray-400 hover:text-white">
                 <span className="sr-only">Facebook</span>
                 <FiFacebook className="h-6 w-6" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white">
+              {/* <a href="#" className="text-gray-400 hover:text-white">
                 <span className="sr-only">Twitter</span>
                 <FiTwitter className="h-6 w-6" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white">
+              </a> */}
+              <a href="https://www.instagram.com/faraday.travel?igsh=MW04c2k0aTh4OHlqZQ==" className="text-gray-400 hover:text-white">
                 <span className="sr-only">Instagram</span>
                 <FiInstagram className="h-6 w-6" />
               </a>
@@ -97,7 +104,7 @@ const Footer = () => {
               </div>
             </div>
             <p className="mt-8 text-base text-gray-400 md:mt-0 md:order-1">
-              &copy; {currentYear} TourKu. All rights reserved.
+              &copy; {currentYear} Faraday Tour and Travel. All rights reserved.
             </p>
           </div>
         </div>

@@ -17,15 +17,21 @@ export default function AboutPage() {
     'Layanan Pelanggan 24/7',
     'Proses Pemesanan Mudah',
     'Asuransi Perjalanan Terjamin',
-    'Paket Wisata Bisa Kustom',
+    'Layanan Bisa Kustom',
   ];
+
+  const getAboutImage = (path: string) => {
+    const api = process.env.NEXT_PUBLIC_API_URL as string | undefined;
+    const origin = api ? api.replace(/\/api$/, '') : (typeof window !== 'undefined' ? `http://${window.location.hostname}:4000` : 'http://localhost:4000');
+    return `${origin}${path}`;
+  };
 
   return (
     <div className="bg-white min-h-screen">
       {/* Hero Section */}
       <div className="relative bg-blue-600 py-20 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Tentang TourKu</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Tentang Faraday Tour and Travel</h1>
           <p className="text-xl text-blue-100 max-w-2xl mx-auto">
             Kami adalah mitra perjalanan terpercaya Anda, menghadirkan pengalaman liburan yang tak terlupakan di seluruh penjuru nusantara.
           </p>
@@ -38,7 +44,7 @@ export default function AboutPage() {
           <div>
             <h2 className="text-3xl font-bold text-gray-900 mb-6">Misi Kami</h2>
             <p className="text-gray-600 mb-4 leading-relaxed">
-              TourKu didirikan dengan visi untuk membuat keindahan Indonesia dapat dinikmati oleh semua orang. Kami percaya bahwa setiap perjalanan bukan sekadar perpindahan tempat, melainkan penciptaan kenangan yang abadi.
+              Faraday Tour and Travel didirikan dengan visi untuk membuat keindahan Indonesia dapat dinikmati oleh semua orang. Kami percaya bahwa setiap perjalanan bukan sekadar perpindahan tempat, melainkan penciptaan kenangan yang abadi.
             </p>
             <p className="text-gray-600 mb-8 leading-relaxed">
               Sejak tahun 2010, kami telah membantu ribuan keluarga dan traveler solo untuk menjelajahi destinasi impian mereka dengan aman, nyaman, dan terjangkau.
@@ -54,7 +60,7 @@ export default function AboutPage() {
           </div>
           <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-xl">
             <Image
-              src="https://images.unsplash.com/photo-1533105079780-92b9be482077?q=80&w=1000"
+              src={getAboutImage('/packages/WhatsApp Image 2026-01-13 at 7.09.06 PM.jpeg')}
               alt="Travel Team"
               fill
               className="object-cover"

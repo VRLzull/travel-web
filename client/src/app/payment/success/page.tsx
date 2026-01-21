@@ -16,6 +16,10 @@ const SuccessContent = async ({ orderId }: { orderId: string }) => {
     ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)
     : undefined;
 
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '6285385631827';
+  const whatsappMessage = `Halo, saya sudah bayar\nOrder ID: ${orderId}`;
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4" suppressHydrationWarning>
       <div className="bg-white rounded-lg shadow p-6 max-w-md w-full text-center" suppressHydrationWarning>
@@ -32,8 +36,20 @@ const SuccessContent = async ({ orderId }: { orderId: string }) => {
         {formattedAmount && (
           <p className="text-lg font-semibold text-gray-900 mb-6">Total: {formattedAmount}</p>
         )}
-        <PaymentReceiptLink orderId={orderId} />
-        <Link href="/" className="w-full inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md">Kembali ke Beranda</Link>
+        <div className="flex flex-col gap-3">
+          <a 
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md transition-colors"
+          >
+            Konfirmasi lewat Chat
+          </a>
+          <PaymentReceiptLink orderId={orderId} />
+          <Link href="/" className="w-full inline-block bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md transition-colors">
+            Kembali ke Beranda
+          </Link>
+        </div>
       </div>
     </div>
   );

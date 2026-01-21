@@ -86,7 +86,7 @@ function App() {
           <div className={`uppercase text-xs ${sidebarCollapsed ? 'hidden md:block md:hidden' : ''} text-gray-400 px-4 py-2`}>Menu</div>
           <NavLink to="/admin/packages" className={({isActive})=>`flex items-center gap-3 px-4 py-2 rounded ${isActive?'bg-indigo-600':'hover:bg-gray-800'}`}>
             <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M21 16V8l-9-5-9 5v8l9 5 9-5zM12 4.26L18.74 8 12 11.74 5.26 8 12 4.26zM12 13.26L18.74 10v4L12 17.26 5.26 14v-4L12 13.26z"/></svg>
-            <span className={`${sidebarCollapsed ? 'hidden md:block md:hidden' : ''}`}>Paket Wisata</span>
+            <span className={`${sidebarCollapsed ? 'hidden md:block md:hidden' : ''}`}>Layanan</span>
           </NavLink>
           <NavLink to="/admin/orders" className={({isActive})=>`flex items-center gap-3 px-4 py-2 rounded ${isActive?'bg-indigo-600':'hover:bg-gray-800'}`}>
             <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.82 12h8.36l1.24-5H6.58l1.24 5zM5 6h14l-2 9H7L5 6z"/></svg>

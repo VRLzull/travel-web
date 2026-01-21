@@ -1,13 +1,1 @@
-node_modules/
-dist/
-.env
-.next/
-build/
-.DS_Store
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.idea/
-.vscode/
-*.tsbuildinfo
+node_modules

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { adminApi } from '../../../services/api'
+import { adminApi, getBackendOrigin } from '../../../services/api'
 
 const CATEGORIES = [
   'Domestik',
@@ -32,6 +32,8 @@ export default function EditPackagePage() {
   })
   
   const [imageUrl, setImageUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [primaryImageEditFile, setPrimaryImageEditFile] = useState<File | null>(null)
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleQuota, setScheduleQuota] = useState<number>(10)
 
@@ -94,7 +96,13 @@ export default function EditPackagePage() {
         ...form,
         price_per_person: Number(form.price_per_person),
         duration_days: Number(form.duration_days),
+        primary_image_file: primaryImageEditFile || undefined
       });
+      setPrimaryImageEditFile(null);
+      // Reset input file if it exists
+      const fileInput = document.getElementById('primary-image-edit') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
       await load();
       alert('Perubahan berhasil disimpan');
     } catch (e: any) {
@@ -106,8 +114,17 @@ export default function EditPackagePage() {
 
   const addImage = async () => {
     try {
-      await adminApi.addImage(id, imageUrl, false)
+      if (!imageFile && !imageUrl) {
+        alert('Pilih file gambar atau masukkan URL gambar');
+        return;
+      }
+      await adminApi.addImage(id, imageFile || imageUrl, false)
       setImageUrl('')
+      setImageFile(null)
+      // Reset input file
+      const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
       await load()
     } catch (e: any) {
       alert(e?.message || 'Gagal menambah gambar')
@@ -128,7 +145,7 @@ export default function EditPackagePage() {
   return (
     <div className="p-6">
       <button onClick={()=>navigate('/admin/packages')} className="mb-4 px-3 py-2 rounded-md border">Kembali</button>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Edit Paket</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">Edit Layanan</h1>
       {errorMsg && <div className="mb-4 p-3 rounded-md border border-red-200 bg-red-50 text-red-700">{errorMsg}</div>}
       {loading ? (
         <div>Memuat...</div>
@@ -140,7 +157,7 @@ export default function EditPackagePage() {
             <h2 className="text-lg font-semibold mb-4">Informasi Dasar</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Judul Paket</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Judul Layanan</label>
                 <input 
                   name="title"
                   type="text"
@@ -185,7 +202,7 @@ export default function EditPackagePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Harga per Orang (IDR)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Harga per Hari (IDR)</label>
                 <div className="relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 sm:text-sm">Rp</span>
@@ -201,9 +218,24 @@ export default function EditPackagePage() {
                     placeholder="0"
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">/orang</span>
+                    <span className="text-gray-500 sm:text-sm">/hari</span>
                   </div>
                 </div>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Update Gambar Utama (Thumbnail)</label>
+                <input 
+                  id="primary-image-edit"
+                  type="file" 
+                  accept="image/*"
+                  className="w-full border rounded-md px-3 py-2 text-sm" 
+                  onChange={e => {
+                    if (e.target.files && e.target.files[0]) {
+                      setPrimaryImageEditFile(e.target.files[0]);
+                    }
+                  }}
+                />
+                <p className="mt-1 text-xs text-gray-500">Pilih file baru untuk mengganti gambar utama paket ini.</p>
               </div>
             </div>
           </div>
@@ -218,7 +250,7 @@ export default function EditPackagePage() {
                 className="w-full border rounded-md px-3 py-2"
                 value={form.short_description}
                 onChange={handleFormChange}
-                placeholder="Deskripsi singkat yang akan ditampilkan di halaman daftar paket"
+                placeholder="Deskripsi singkat yang akan ditampilkan di halaman daftar layanan"
               />
             </div>
             <div>
@@ -229,7 +261,7 @@ export default function EditPackagePage() {
                 className="w-full border rounded-md px-3 py-2"
                 value={form.description}
                 onChange={handleFormChange}
-                placeholder="Deskripsi lengkap paket wisata"
+                placeholder="Deskripsi lengkap layanan travel"
               />
             </div>
             <div>
@@ -275,9 +307,15 @@ export default function EditPackagePage() {
                   {(pkg?.images || []).map((img: any) => (
                     <div key={img.id} className={`border rounded-md overflow-hidden ${img.is_primary ? 'ring-2 ring-indigo-500' : ''}`}>
                       <img 
-                        src={img.image_url} 
-                        alt="Gambar paket" 
+                        src={img.image_url.startsWith('/') ? `${getBackendOrigin()}${encodeURI(img.image_url)}` : img.image_url} 
+                        alt="Gambar layanan" 
                         className="w-full h-32 object-cover" 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (target.src.indexOf('placeholder-package.svg') === -1) {
+                            target.src = '/admin/images/placeholder-package.svg';
+                          }
+                        }}
                       />
                       <div className="p-2 bg-gray-50">
                         <div className="flex justify-between items-center">
@@ -323,24 +361,47 @@ export default function EditPackagePage() {
               
               <div className="border-t pt-4">
                 <h3 className="text-md font-medium mb-2">Tambah Gambar Baru</h3>
-                <div className="flex space-x-2">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      id="image-upload"
+                      type="file" 
+                      accept="image/*"
+                      className="flex-1 border rounded-md px-3 py-2 text-sm" 
+                      onChange={e => {
+                        if (e.target.files && e.target.files[0]) {
+                          setImageFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <button 
+                      onClick={addImage} 
+                      disabled={!imageFile && !imageUrl}
+                      className="px-6 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Unggah & Tambah
+                    </button>
+                  </div>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                      <div className="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="px-2 bg-white text-xs text-gray-500 uppercase font-medium">Atau masukkan URL (opsional)</span>
+                    </div>
+                  </div>
+
                   <input 
-                    type="url" 
-                    className="flex-1 border rounded-md px-3 py-2 text-sm" 
-                    placeholder="Masukkan URL gambar" 
+                    type="text" 
+                    className="w-full border rounded-md px-3 py-2 text-sm" 
+                    placeholder="https://example.com/image.jpg" 
                     value={imageUrl} 
                     onChange={e => setImageUrl(e.target.value)}
                   />
-                  <button 
-                    onClick={addImage} 
-                    disabled={!imageUrl}
-                    className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Tambah
-                  </button>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Pastikan URL gambar valid dan dapat diakses secara publik
+                <p className="mt-2 text-xs text-gray-500">
+                  Format yang didukung: JPG, PNG, WEBP. Maksimal 5MB.
                 </p>
               </div>
             </div>

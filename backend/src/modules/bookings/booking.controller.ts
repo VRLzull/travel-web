@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { createBooking, getBookingById, getAllBookings } from "./booking.service";
+import { createBooking, getBookingById, getAllBookings, updateBookingStatus, deleteBooking } from "./booking.service";
 import { IAuthRequest } from "../../types/user";
 
 export const getBookingsHandler = async (req: IAuthRequest, res: Response) => {
@@ -28,6 +28,74 @@ export const getBookingsHandler = async (req: IAuthRequest, res: Response) => {
   }
 };
 
+export const updateBookingStatusHandler = async (req: IAuthRequest, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { status } = req.body;
+
+    if (!id || !status) {
+      return res.status(400).json({ success: false, message: "ID dan status diperlukan" });
+    }
+
+    const isAdmin = req.role === 'ADMIN' || req.role === 'SUPERADMIN';
+    const booking = await getBookingById(id);
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking tidak ditemukan" });
+    }
+
+    // Jika bukan admin, hanya boleh membatalkan (status: cancelled) pesanan miliknya sendiri yang masih pending
+    if (!isAdmin) {
+      const userEmail = (req.user as any)?.email;
+      if (userEmail !== booking.customer_email) {
+        return res.status(403).json({ success: false, message: "Akses ditolak: Anda tidak memiliki akses ke pesanan ini" });
+      }
+
+      if (status !== 'cancelled') {
+        return res.status(403).json({ success: false, message: "Akses ditolak: Hanya admin yang bisa mengubah status selain pembatalan" });
+      }
+
+      if (booking.payment_status !== 'pending') {
+        return res.status(400).json({ success: false, message: "Pesanan yang sudah lunas atau batal tidak bisa diubah" });
+      }
+    }
+
+    await updateBookingStatus(id, status);
+    
+    return res.json({
+      success: true,
+      message: `Status booking #${id} berhasil diperbarui menjadi ${status}`
+    });
+  } catch (err) {
+    console.error("Error updating booking status", err);
+    return res.status(500).json({ success: false, message: "Gagal memperbarui status booking" });
+  }
+};
+
+export const deleteBookingHandler = async (req: IAuthRequest, res: Response) => {
+  try {
+    const isAdmin = req.role === 'ADMIN' || req.role === 'SUPERADMIN';
+    if (!isAdmin) {
+      return res.status(403).json({ success: false, message: "Akses ditolak: Hanya admin yang bisa menghapus transaksi" });
+    }
+
+    const id = Number(req.params.id);
+    if (!id) {
+      return res.status(400).json({ success: false, message: "ID diperlukan" });
+    }
+
+    await deleteBooking(id);
+    
+    return res.json({
+      success: true,
+      message: `Transaksi #${id} berhasil dihapus`
+    });
+  } catch (err) {
+    console.error("Error deleting booking", err);
+    return res.status(500).json({ success: false, message: "Gagal menghapus transaksi" });
+  }
+};
+
 export const createBookingHandler = async (req: IAuthRequest, res: Response) => {
   try {
     const {
@@ -38,6 +106,14 @@ export const createBookingHandler = async (req: IAuthRequest, res: Response) => 
       customer_email,
       customer_phone,
       total_participants,
+      travel_time,
+      landing_time,
+      airline,
+      flight_code,
+      terminal,
+      pickup_address,
+      dropoff_address,
+      notes,
     } = req.body;
 
     // Validasi field yang required
@@ -137,6 +213,14 @@ export const createBookingHandler = async (req: IAuthRequest, res: Response) => 
       customer_email,
       customer_phone,
       total_participants: Number(total_participants),
+      travel_time,
+      landing_time,
+      airline,
+      flight_code,
+      terminal,
+      pickup_address,
+      dropoff_address,
+      notes,
     }, userId);
 
     return res.status(201).json({

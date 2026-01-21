@@ -5,6 +5,18 @@ async function fixForeignKeys() {
   try {
     await conn.beginTransaction();
 
+    // Ensure bookings table has trip_date column
+    const [bookingCols] = await conn.query(
+      "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'bookings'"
+    ) as any[];
+    const bookingColSet = new Set<string>(Array.isArray(bookingCols) ? bookingCols.map((r: any) => String(r.COLUMN_NAME)) : []);
+    if (!bookingColSet.has('trip_date')) {
+      await conn.query("ALTER TABLE `bookings` ADD COLUMN `trip_date` DATE NULL AFTER `schedule_id`");
+      console.log("[fixSchema] Added column bookings.trip_date");
+    } else {
+      console.log("[fixSchema] Column bookings.trip_date already exists");
+    }
+
     // Detect target packages table
     const [pkgTables] = await conn.query(
       "SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = DATABASE() AND TABLE_NAME IN ('tour_packages','packages')"

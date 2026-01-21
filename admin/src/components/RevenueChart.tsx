@@ -66,7 +66,7 @@ export default function RevenueChart({
       svg.append('g').call(
         d3
           .axisLeft(y)
-          .tickFormat((d) => `Rp${d3.format('.2s')(d as number)}`)
+          .tickFormat((d) => `Rp. ${d3.format('.2s')(d as number)}`)
           .tickSizeOuter(0)
       );
 
@@ -97,7 +97,7 @@ export default function RevenueChart({
         .attr('text-anchor', 'middle')
         .attr('font-size', '10px'
         )
-        .text((d) => (d.revenue > 0 ? `Rp${d3.format('.2s')(d.revenue)}` : ''));
+        .text((d) => (d.revenue > 0 ? `Rp. ${d3.format('.2s')(d.revenue)}` : ''));
 
     } catch (error) {
       console.error('Error rendering chart:', error);

@@ -4,7 +4,8 @@ import {
   getPackageById, 
   createPackage,
   updatePackage,
-  deletePackage
+  deletePackage,
+  resetTravelPackages
 } from "./package.service";
 
 export const getPackagesHandler = async (req: Request, res: Response) => {
@@ -38,8 +39,15 @@ export const getPackageDetailHandler = async (req: Request, res: Response) => {
 
 export const createPackageHandler = async (req: Request, res: Response) => {
   try {
+    const data = { ...req.body };
+    
+    // Jika ada file primary_image yang diupload
+    if (req.file) {
+      data.primary_image = `/packages/${req.file.filename}`;
+    }
+
     const requiredFields = ['title', 'location', 'duration_days', 'price', 'description'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
+    const missingFields = requiredFields.filter(field => !data[field]);
     
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -49,27 +57,27 @@ export const createPackageHandler = async (req: Request, res: Response) => {
     }
 
     // Validate price and duration are positive numbers
-    if (req.body.price <= 0 || req.body.duration_days <= 0) {
+    if (data.price <= 0 || data.duration_days <= 0) {
       return res.status(400).json({
         message: 'Price and duration days must be greater than 0'
       });
     }
 
     const newPackage = await createPackage({
-      title: req.body.title,
-      location: req.body.location,
-      city: req.body.city || req.body.location,
-      country: req.body.country || 'Indonesia',
-      duration_days: req.body.duration_days,
-      price: req.body.price,
-      max_people: req.body.max_people || 10,
-      description: req.body.description,
-      is_featured: req.body.is_featured,
-      primary_image: req.body.primary_image,
-      category: req.body.category,
-      short_description: req.body.short_description,
-      itinerary: req.body.itinerary,
-      facilities: req.body.facilities
+      title: data.title,
+      location: data.location,
+      city: data.city || data.location,
+      country: data.country || 'Indonesia',
+      duration_days: data.duration_days,
+      price: data.price,
+      max_people: data.max_people || 10,
+      description: data.description,
+      is_featured: data.is_featured,
+      primary_image: data.primary_image,
+      category: data.category,
+      short_description: data.short_description,
+      itinerary: data.itinerary,
+      facilities: data.facilities
     });
 
     res.status(201).json({
@@ -95,20 +103,27 @@ export const updatePackageHandler = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid package id" });
     }
 
+    const data = { ...req.body };
+    
+    // Jika ada file primary_image yang diupload
+    if (req.file) {
+      data.primary_image = `/packages/${req.file.filename}`;
+    }
+
     // Validate numeric fields if provided
-    if (req.body.price !== undefined && req.body.price <= 0) {
+    if (data.price !== undefined && data.price <= 0) {
       return res.status(400).json({
         message: 'Price must be greater than 0'
       });
     }
 
-    if (req.body.duration_days !== undefined && req.body.duration_days <= 0) {
+    if (data.duration_days !== undefined && data.duration_days <= 0) {
       return res.status(400).json({
         message: 'Duration days must be greater than 0'
       });
     }
 
-    const updatedPackage = await updatePackage(id, req.body);
+    const updatedPackage = await updatePackage(id, data);
     
     if (!updatedPackage) {
       return res.status(404).json({ message: "Package not found" });
@@ -161,6 +176,23 @@ export const deletePackageHandler = async (req: Request, res: Response) => {
     res.status(500).json({ 
       success: false,
       message: err.message || "Failed to delete package" 
+    });
+  }
+};
+
+export const resetTravelPackagesHandler = async (_req: Request, res: Response) => {
+  try {
+    const result = await resetTravelPackages();
+    res.json({
+      success: true,
+      message: `Reset selesai. Layanan baru ditambahkan: ${result.inserted}`,
+      data: result
+    });
+  } catch (err: any) {
+    console.error("Error resetting travel packages", err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message || "Gagal reset paket travel"
     });
   }
 };

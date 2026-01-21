@@ -48,7 +48,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-lg shadow p-6 max-w-md w-full">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Daftar</h1>
-        <p className="text-gray-600 mb-6">Buat akun untuk memesan paket wisata.</p>
+        <p className="text-gray-600 mb-6">Buat akun untuk memesan layanan.</p>
         {errorMsg && (
           <div className="mb-4 p-3 rounded-md border border-red-200 bg-red-50 text-red-700">{errorMsg}</div>
         )}

@@ -6,8 +6,12 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'TourKu - Paket Wisata Terbaik',
+  title: 'Faraday Tour and Travel - Layanan Travel Terbaik',
   description: 'Temukan pengalaman wisata terbaik dengan harga terjangkau',
+  icons: {
+    icon: '/faraday-tour-and-travel.png',
+    apple: '/faraday-tour-and-travel.png',
+  },
 };
 
 export default function RootLayout({

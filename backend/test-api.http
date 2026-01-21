@@ -67,7 +67,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "title": "Paket Wisata Bali 3D2N",
+  "title": "Layanan Bali 3D2N",
   "location": "Bali, Indonesia",
   "category": "Domestic",
   "duration_days": 3,
@@ -83,7 +83,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "title": "Paket Wisata Bali 4D3N",
+  "title": "Layanan Bali 4D3N",
   "price_per_person": 3000000,
   "duration_days": 4
 }

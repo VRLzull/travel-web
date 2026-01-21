@@ -50,7 +50,7 @@ export default function UsersPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">No.</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telepon</th>
@@ -64,9 +64,9 @@ export default function UsersPage() {
                     <td colSpan={6} className="px-4 py-6 text-center text-gray-500">Belum ada user</td>
                   </tr>
                 ) : (
-                  users.map((u) => (
+                  users.map((u, index) => (
                     <tr key={u.id}>
-                      <td className="px-4 py-2">{u.id}</td>
+                      <td className="px-4 py-2">{index + 1}</td>
                       <td className="px-4 py-2">{u.name}</td>
                       <td className="px-4 py-2">{u.email}</td>
                       <td className="px-4 py-2">{u.phone}</td>

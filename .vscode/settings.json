@@ -1,0 +1,6 @@
+{
+    "explorer.fileNesting.enabled": false,
+    "files.simpleDialog.enable": true,
+    "editor.codeActions.triggerOnFocusChange": true,
+    "files.autoSaveWorkspaceFilesOnly": true
+}

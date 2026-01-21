@@ -120,6 +120,14 @@ export interface Booking {
   total_participants: number;
   total_amount: number;
   payment_status: string;
+  travel_time?: string;
+  landing_time?: string;
+  airline?: string;
+  flight_code?: string;
+  terminal?: string;
+  pickup_address?: string;
+  dropoff_address?: string;
+  notes?: string;
   created_at: string;
 }
 
@@ -170,6 +178,14 @@ export const apiClient = {
     customer_email: string;
     customer_phone: string;
     total_participants: number;
+    travel_time?: string;
+    landing_time?: string;
+    airline?: string;
+    flight_code?: string;
+    terminal?: string;
+    pickup_address?: string;
+    dropoff_address?: string;
+    notes?: string;
   }): Promise<Booking> => {
     const response = await api.post<ApiEnvelope<Booking>>('/bookings', bookingData);
     return response.data.data;
@@ -208,6 +224,11 @@ export const apiClient = {
 
   getPaymentByBooking: async (bookingId: number) => {
     const response = await api.get(`/payment/by-booking/${bookingId}`);
+    return response.data;
+  },
+
+  updateBookingStatus: async (id: number, status: string) => {
+    const response = await api.put<ApiEnvelope<any>>(`/bookings/${id}/status`, { status });
     return response.data;
   },
 

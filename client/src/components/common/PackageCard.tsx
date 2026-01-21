@@ -15,7 +15,7 @@ type PackageCardProps = {
   onAddToCart?: (item: any) => void;
 };
 
-const DEFAULT_IMAGE_URL = '/images/placeholder-package.svg';
+const DEFAULT_IMAGE_URL = '/packages/placeholder-package.svg';
 
 function resolveBackendOrigin(): string {
   const api = process.env.NEXT_PUBLIC_API_URL as string | undefined;
@@ -40,7 +40,7 @@ function processImageUrl(url?: string): string {
 
 export const PackageCard = ({
   id,
-  title = 'Paket Wisata',
+  title = 'Layanan',
   location = 'Lokasi',
   price = 0,
   duration = '0 Hari',
@@ -81,7 +81,7 @@ export const PackageCard = ({
       <div className="relative h-48 bg-gray-100">
         <Image
           src={resolvedSrc}
-          alt={title || 'Gambar paket wisata'}
+          alt={title || 'Gambar layanan'}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -115,7 +115,7 @@ export const PackageCard = ({
           <div className="mb-2">
             <p className="text-xs text-gray-500">Mulai dari</p>
             <p className="text-lg font-bold text-blue-600">{formattedPrice}</p>
-            <p className="text-xs text-gray-500">per orang</p>
+            <p className="text-xs text-gray-500">per hari</p>
           </div>
           <div className="flex gap-2">
             {href ? (

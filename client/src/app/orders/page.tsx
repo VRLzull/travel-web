@@ -74,20 +74,38 @@ export default function OrdersPage() {
     }
   };
 
+  const handleCancel = async (id: number) => {
+    if (!window.confirm('Apakah Anda yakin ingin membatalkan pesanan ini?')) return;
+    try {
+      setLoading(true);
+      await apiClient.updateBookingStatus(id, 'cancelled');
+      await load();
+      alert('Pesanan berhasil dibatalkan.');
+    } catch (err: any) {
+      console.error('Gagal membatalkan pesanan:', err);
+      alert(err.response?.data?.message || 'Gagal membatalkan pesanan.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Hapus useEffect yang redundant dengan email dependency
   // useEffect(() => { ... }, [email]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Riwayat Pesanan</h1>
-          <button 
-            onClick={load} 
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-          >
-            Refresh
-          </button>
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <h1 className="text-3xl font-bold text-gray-900">Riwayat Pesanan</h1>
+            <button 
+              onClick={load} 
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              Refresh
+            </button>
+          </div>
+          <p className="text-gray-500 text-sm italic">* Pesanan dapat dibatalkan selama belum dilakukan pembayaran.</p>
         </div>
 
         {errorMsg && (
@@ -104,9 +122,9 @@ export default function OrdersPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID Booking</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Paket Wisata</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Layanan</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tanggal Trip</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Peserta</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Durasi/Unit</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Pembayaran</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
@@ -131,10 +149,10 @@ export default function OrdersPage() {
                         </div>
                         <div>
                           <p className="text-gray-900 font-semibold text-lg">Belum Ada Pesanan</p>
-                          <p className="text-gray-500">Anda belum memiliki riwayat pemesanan paket wisata.</p>
+                          <p className="text-gray-500">Anda belum memiliki riwayat pemesanan layanan.</p>
                         </div>
                         <a href="/paket-wisata" className="mt-2 inline-flex items-center px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
-                          Cari Paket Sekarang
+                          Cari Layanan Sekarang
                         </a>
                       </div>
                     </td>
@@ -144,14 +162,14 @@ export default function OrdersPage() {
                     <tr key={b.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">#{b.id}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">{pkgMap[b.package_id] || 'Paket Wisata'}</div>
+                        <div className="text-sm font-semibold text-gray-900">{pkgMap[b.package_id] || 'Layanan'}</div>
                         <div className="text-xs text-gray-500">{new Date(b.created_at || '').toLocaleDateString('id-ID')}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                         {new Date(b.trip_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {b.total_participants} Orang
+                        {b.total_participants} Hari
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                         {formatCurrency(b.total_amount)}
@@ -168,12 +186,22 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a 
-                          href={`/orders/${b.id}`}
-                          className="text-blue-600 hover:text-blue-800 font-semibold"
-                        >
-                          Lihat Detail →
-                        </a>
+                        <div className="flex justify-end items-center gap-3">
+                          <a 
+                            href={`/orders/${b.id}`}
+                            className="text-blue-600 hover:text-blue-800 font-semibold"
+                          >
+                            Lihat Detail →
+                          </a>
+                          {b.payment_status === 'pending' && (
+                            <button
+                              onClick={() => handleCancel(b.id)}
+                              className="text-red-600 hover:text-red-800 font-semibold"
+                            >
+                              Batal
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -192,7 +220,7 @@ export default function OrdersPage() {
             ) : bookings.length === 0 ? (
               <div className="p-8 text-center">
                 <p className="text-gray-900 font-semibold mb-2">Belum Ada Pesanan</p>
-                <a href="/paket-wisata" className="text-blue-600 font-medium">Cari Paket Wisata →</a>
+                <a href="/paket-wisata" className="text-blue-600 font-medium">Cari Layanan →</a>
               </div>
             ) : (
               bookings.map((b) => (
@@ -200,7 +228,7 @@ export default function OrdersPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-xs font-mono text-gray-500">#{b.id}</p>
-                      <h3 className="font-bold text-gray-900">{pkgMap[b.package_id] || 'Paket Wisata'}</h3>
+                      <h3 className="font-bold text-gray-900">{pkgMap[b.package_id] || 'Layanan'}</h3>
                       <p className="text-xs text-gray-500">{new Date(b.created_at || '').toLocaleDateString('id-ID')}</p>
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
@@ -223,12 +251,22 @@ export default function OrdersPage() {
                       <p className="text-gray-900 font-bold">{formatCurrency(b.total_amount)}</p>
                     </div>
                   </div>
-                  <a 
-                    href={`/orders/${b.id}`}
-                    className="block w-full text-center py-2 bg-blue-50 text-blue-600 rounded-lg font-semibold text-sm hover:bg-blue-100 transition-colors"
-                  >
-                    Lihat Detail Pesanan
-                  </a>
+                  <div className="flex gap-2">
+                    <a 
+                      href={`/orders/${b.id}`}
+                      className="flex-1 text-center py-2 bg-blue-50 text-blue-600 rounded-lg font-semibold text-sm hover:bg-blue-100 transition-colors"
+                    >
+                      Lihat Detail
+                    </a>
+                    {b.payment_status === 'pending' && (
+                      <button
+                        onClick={() => handleCancel(b.id)}
+                        className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg font-semibold text-sm hover:bg-red-100 transition-colors"
+                      >
+                        Batal
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))
             )}

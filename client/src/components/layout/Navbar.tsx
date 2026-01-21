@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FiMenu, FiX, FiUser, FiShoppingCart, FiSearch, FiLogOut, FiSettings, FiClipboard } from 'react-icons/fi';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
 type User = { id: number; name: string; email: string; role?: string };
@@ -62,7 +63,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Beranda', href: '/' },
-    { name: 'Paket Wisata', href: '/paket-wisata' },
+    { name: 'Layanan Travel', href: '/paket-wisata' },
     { name: 'Tentang Kami', href: '/tentang-kami' },
     { name: 'Kontak', href: '/kontak' },
   ];
@@ -73,7 +74,14 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0 flex items-center">
-              <span className="text-2xl font-bold text-blue-600">TourKu</span>
+              <Image 
+                src="/faraday-tour-and-travel.png" 
+                alt="Faraday Tour Logo" 
+                width={150} 
+                height={40} 
+                className="h-10 w-auto"
+                priority
+              />
             </Link>
           </div>
 
@@ -94,7 +102,7 @@ const Navbar = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Cari paket wisata..."
+                placeholder="Cari layanan travel..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -198,7 +206,7 @@ const Navbar = () => {
                 <div className="relative w-full">
                   <input
                     type="text"
-                    placeholder="Cari paket wisata..."
+                    placeholder="Cari layanan..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

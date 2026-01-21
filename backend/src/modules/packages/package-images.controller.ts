@@ -8,14 +8,20 @@ import {
 export const addImageHandler = async (req: Request, res: Response) => {
   try {
     const packageId = Number(req.params.packageId);
-    const { image_url, is_primary } = req.body;
+    let { image_url, is_primary } = req.body;
 
     if (!packageId) {
       return res.status(400).json({ message: "Invalid package id" });
     }
 
+    // Jika ada file yang diupload, gunakan path file tersebut
+    if (req.file) {
+      // Simpan path relatif ke folder packages
+      image_url = `/packages/${req.file.filename}`;
+    }
+
     if (!image_url) {
-      return res.status(400).json({ message: "image_url is required" });
+      return res.status(400).json({ message: "Image file or image_url is required" });
     }
 
     const image = await addPackageImage(
