@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FiMenu, FiX, FiUser, FiShoppingCart, FiSearch, FiLogOut, FiSettings, FiClipboard } from 'react-icons/fi';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import logoBlack from 'public/faraday-tour-and-travel-hitam.png';
 
 type User = { id: number; name: string; email: string; role?: string };
 
@@ -75,7 +76,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0 flex items-center">
               <Image 
-                src="/faraday-tour-and-travel-hitam.png" 
+                src={logoBlack} 
                 alt="Faraday Tour Logo" 
                 width={180} 
                 height={48} 
