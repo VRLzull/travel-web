@@ -10,26 +10,17 @@ let midtransSnap: InstanceType<typeof midtransClient.Snap> | null = null;
 // Fungsi untuk menginisialisasi midtransSnap
 export function initializeMidtrans() {
   if (!process.env.MIDTRANS_SERVER_KEY || !process.env.MIDTRANS_CLIENT_KEY) {
-    throw new Error('Midtrans credentials are not configured');
+    midtransSnap = null;
+    return null;
   }
-  
-  // FORCE OVERRIDE for debugging if needed, but better to rely on env
-  // console.log('Initializing Midtrans with:', {
-  //   isProduction: env.midtransIsProduction,
-  //   serverKey: process.env.MIDTRANS_SERVER_KEY,
-  //   clientKey: process.env.MIDTRANS_CLIENT_KEY
-  // });
-
   midtransSnap = new midtransClient.Snap({
     isProduction: env.midtransIsProduction,
     serverKey: process.env.MIDTRANS_SERVER_KEY,
     clientKey: process.env.MIDTRANS_CLIENT_KEY
   });
-  
   return midtransSnap;
 }
 
-// Inisialisasi saat modul dimuat
 initializeMidtrans();
 
 // Interface untuk response dari Midtrans
@@ -82,7 +73,10 @@ const createTransaction = async (booking: Booking, serverKey: string): Promise<M
     throw new Error('Invalid booking data. Required fields are missing.');
   }
   if (!midtransSnap) {
-    throw new Error('Midtrans client is not initialized');
+    initializeMidtrans();
+  }
+  if (!midtransSnap) {
+    throw new Error('Midtrans belum dikonfigurasi. Set MIDTRANS_SERVER_KEY dan MIDTRANS_CLIENT_KEY.');
   }
 
   const orderId = `ORDER-${booking.id}-${Date.now()}`;

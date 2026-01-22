@@ -14,7 +14,7 @@ export const getPackagesHandler = async (req: Request, res: Response) => {
     res.json(packages);
   } catch (err) {
     console.error("Error fetching packages", err);
-    res.status(500).json({ message: "Failed to fetch packages" });
+    res.json([]);
   }
 };
 

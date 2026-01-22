@@ -13,6 +13,10 @@ import * as bookingService from '../modules/bookings/booking.service';
 
 const router = Router();
 
+router.get('/', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
 router.use('/auth', authRoutes);
 
 // API routes
