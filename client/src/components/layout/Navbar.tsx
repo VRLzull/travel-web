@@ -75,11 +75,11 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0 flex items-center">
               <Image 
-                src="/faraday-tour-and-travel.png" 
+                src="/faraday-tour-and-travel-hitam.png" 
                 alt="Faraday Tour Logo" 
-                width={150} 
-                height={40} 
-                className="h-10 w-auto"
+                width={180} 
+                height={48} 
+                className="h-12 w-auto"
                 priority
               />
             </Link>

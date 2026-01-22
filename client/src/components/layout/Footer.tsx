@@ -45,7 +45,7 @@ const Footer = () => {
               alt="Faraday Tour Logo" 
               width={180} 
               height={50} 
-              className="h-12 w-auto brightness-0 invert"
+              className="h-12 w-auto"
             />
             <p className="text-gray-300 text-sm">
               Temukan pengalaman wisata terbaik dengan harga terjangkau di seluruh Indonesia.
