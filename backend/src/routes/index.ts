@@ -27,6 +27,7 @@ router.use('/payment', paymentRoutes);
 
 let localClient: Client | null = null;
 let botStatus = 'initializing';
+let latestQrString: string | null = null;
 
 export function initializeLocalWhatsApp() {
   if (env.waProvider !== 'local') return;
@@ -59,8 +60,10 @@ export function initializeLocalWhatsApp() {
 
   localClient.on('qr', (qr) => {
     botStatus = 'qr_required';
+    latestQrString = qr;
     console.log('QR RECEIVED. SCAN THIS WITH YOUR WHATSAPP:');
     qrcode.generate(qr, { small: true });
+    console.log(`QR_STRING=${qr}`);
   });
 
   localClient.on('authenticated', () => {
@@ -122,6 +125,52 @@ router.get('/health', (req, res) => {
     status: 'ok',
     whatsapp: botStatus,
     timestamp: new Date().toISOString()
+  });
+});
+
+router.get('/whatsapp/qr', (_req, res) => {
+  if (!latestQrString) {
+    return res.status(503).send('<html><body><h1>QR belum tersedia</h1><p>Status bot: ' + botStatus + '</p></body></html>');
+  }
+  const html = `
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>WhatsApp QR</title>
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f172a;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto}
+.box{padding:24px;border-radius:12px;background:#111827;box-shadow:0 10px 30px rgba(0,0,0,.3);text-align:center}
+h1{font-size:20px;margin:0 0 12px}
+.hint{opacity:.8;font-size:14px;margin-top:10px}
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>Scan QR WhatsApp</h1>
+    <div id="qrcode"></div>
+    <div class="hint">Buka WhatsApp > Perangkat tertaut > Tautkan perangkat</div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    var qrText = ${JSON.stringify(latestQrString)};
+    new QRCode(document.getElementById('qrcode'), {
+      text: qrText,
+      width: 280,
+      height: 280
+    });
+  </script>
+</body>
+</html>`;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
+
+router.get('/whatsapp/qr.json', (_req, res) => {
+  res.json({
+    status: botStatus,
+    qr: latestQrString
   });
 });
 
