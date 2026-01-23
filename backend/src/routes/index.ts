@@ -6,6 +6,7 @@ import authRoutes from '../modules/auth/auth.routes';
 import { env } from '../config/env';
 import { Buffer } from 'buffer';
 import { Client, LocalAuth } from 'whatsapp-web.js';
+import puppeteer from 'puppeteer';
 // @ts-ignore
 import qrcode from 'qrcode-terminal';
 import * as packageService from '../modules/packages/package.service';
@@ -31,6 +32,7 @@ export function initializeLocalWhatsApp() {
   if (env.waProvider !== 'local') return;
 
   console.log('Initializing Local WhatsApp Bot...');
+  const executablePath = process.env.CHROME_PATH || (typeof (puppeteer as any)?.executablePath === 'function' ? (puppeteer as any).executablePath() : undefined);
   localClient = new Client({
     authStrategy: new LocalAuth({
       dataPath: env.waSessionPath || './session'
@@ -40,6 +42,7 @@ export function initializeLocalWhatsApp() {
       remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1014.0-alpha.html'
     },
     puppeteer: {
+      executablePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -49,7 +52,8 @@ export function initializeLocalWhatsApp() {
         '--no-zygote',
         '--disable-gpu'
       ],
-      headless: true
+      headless: true,
+      protocolTimeout: 120000
     }
   });
 
