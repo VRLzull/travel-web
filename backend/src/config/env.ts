@@ -26,5 +26,6 @@ export const env = {
   chatbotApiKey: process.env.CHATBOT_API_KEY || "",
   chatbotApiEndpoint: process.env.CHATBOT_API_ENDPOINT || "",
   isLocalBot: process.env.WA_PROVIDER === 'local',
-  adminBootstrapToken: process.env.ADMIN_BOOTSTRAP_TOKEN || ""
+  adminBootstrapToken: process.env.ADMIN_BOOTSTRAP_TOKEN || "",
+  waSessionPath: process.env.WA_SESSION_PATH || ""
 };

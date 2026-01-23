@@ -33,7 +33,7 @@ export function initializeLocalWhatsApp() {
   console.log('Initializing Local WhatsApp Bot...');
   localClient = new Client({
     authStrategy: new LocalAuth({
-      dataPath: './session'
+      dataPath: env.waSessionPath || './session'
     }),
     webVersionCache: {
       type: 'remote',
