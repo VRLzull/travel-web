@@ -141,25 +141,42 @@ router.get('/whatsapp/qr', (_req, res) => {
 <title>WhatsApp QR</title>
 <style>
 body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f172a;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto}
-.box{padding:24px;border-radius:12px;background:#111827;box-shadow:0 10px 30px rgba(0,0,0,.3);text-align:center}
+.box{padding:24px;border-radius:12px;background:#111827;box-shadow:0 10px 30px rgba(0,0,0,.3);text-align:center;width:340px}
 h1{font-size:20px;margin:0 0 12px}
 .hint{opacity:.8;font-size:14px;margin-top:10px}
+.time{opacity:.7;font-size:12px;margin-top:8px}
 </style>
 </head>
 <body>
   <div class="box">
     <h1>Scan QR WhatsApp</h1>
-    <div id="qrcode"></div>
+    <div id="qrcode" style="margin:auto;width:280px;height:280px"></div>
     <div class="hint">Buka WhatsApp > Perangkat tertaut > Tautkan perangkat</div>
+    <div class="time" id="t"></div>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
-    var qrText = ${JSON.stringify(latestQrString)};
-    new QRCode(document.getElementById('qrcode'), {
-      text: qrText,
-      width: 280,
-      height: 280
-    });
+    var el = document.getElementById('qrcode');
+    var timeEl = document.getElementById('t');
+    var current = ${JSON.stringify(latestQrString)};
+    function render(text){
+      el.innerHTML='';
+      new QRCode(el,{text:text,width:280,height:280});
+      var dt = new Date();
+      timeEl.textContent = 'Updated ' + dt.toLocaleTimeString();
+    }
+    render(current);
+    async function poll(){
+      try{
+        var r = await fetch('/api/whatsapp/qr.json',{cache:'no-store'});
+        var j = await r.json();
+        if(j && j.qr && j.qr !== current){
+          current = j.qr;
+          render(current);
+        }
+      }catch(e){}
+    }
+    setInterval(poll, 3000);
   </script>
 </body>
 </html>`;
