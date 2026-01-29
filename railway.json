@@ -5,6 +5,6 @@
   },
   "deploy": {
     "numReplicas": 1,
-    "sleepApplication": false
+    "sleepApplication": true
   }
 }
