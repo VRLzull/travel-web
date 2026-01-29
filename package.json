@@ -1,4 +1,14 @@
 {
+  "name": "travel-web-monorepo",
+  "version": "1.0.0",
+  "scripts": {
+    "backend:build": "cd backend && npm install && npm run build",
+    "backend:start": "cd backend && npm run start",
+    "client:build": "cd client && npm install && npm run build",
+    "client:start": "cd client && npm run start",
+    "admin:build": "cd admin && npm install && npm run build",
+    "admin:start": "cd admin && npm run start"
+  },
   "dependencies": {
     "axios": "^1.13.2",
     "midtrans-client": "^1.4.3"

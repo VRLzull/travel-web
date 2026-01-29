@@ -117,7 +117,10 @@ export function initializeLocalWhatsApp() {
     }
   });
 
-  localClient.initialize();
+  localClient.initialize().catch(err => {
+    botStatus = 'failed_to_initialize';
+    console.error('FAILED TO INITIALIZE WHATSAPP CLIENT:', err);
+  });
 }
 
 router.get('/health', (req, res) => {
