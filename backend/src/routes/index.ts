@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import * as dns from 'dns';
+import * as https from 'https';
+import { promisify } from 'util';
 import packageRoutes from '../modules/packages/package.routes';
 import bookingRoutes from '../modules/bookings/booking.routes';
 import paymentRoutes from '../modules/payments/payment.routes';
@@ -29,98 +32,301 @@ let localClient: Client | null = null;
 let botStatus = 'initializing';
 let latestQrString: string | null = null;
 
+// Endpoint untuk melihat status WA & QR Code
+router.get('/whatsapp/status', (req, res) => {
+  if (botStatus === 'authenticated') {
+    return res.send(`
+      <html>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h1 style="color: green;">✅ WhatsApp Connected!</h1>
+          <p>Bot is ready and authenticated.</p>
+        </body>
+      </html>
+    `);
+  }
+
+  if (botStatus.startsWith('error')) {
+    return res.send(`
+      <html>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h1 style="color: red;">❌ WhatsApp Error</h1>
+          <p>Status: <strong>${botStatus}</strong></p>
+          <p>The bot failed to initialize. Retrying automatically...</p>
+          <script>setTimeout(() => window.location.reload(), 5000);</script>
+        </body>
+      </html>
+    `);
+  }
+
+  if (latestQrString) {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(latestQrString)}`;
+    return res.send(`
+      <html>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h1>Scan WhatsApp QR Code</h1>
+          <img src="${qrUrl}" alt="QR Code" style="border: 1px solid #ccc; padding: 10px; border-radius: 10px;" />
+          <p>Status: <strong>${botStatus}</strong></p>
+          <p>Please scan this with your WhatsApp (Linked Devices).</p>
+          <script>setTimeout(() => window.location.reload(), 5000);</script>
+        </body>
+      </html>
+    `);
+  }
+
+  return res.send(`
+    <html>
+      <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+        <h1>WhatsApp Bot Status</h1>
+        <p>Current Status: <strong>${botStatus}</strong></p>
+        <p>Waiting for QR Code... (Page will reload)</p>
+        <script>setTimeout(() => window.location.reload(), 3000);</script>
+      </body>
+    </html>
+  `);
+});
+
 export function initializeLocalWhatsApp() {
   if (env.waProvider !== 'local') return;
 
-  console.log('Initializing Local WhatsApp Bot...');
-  const executablePath = process.env.CHROME_PATH || (typeof (puppeteer as any)?.executablePath === 'function' ? (puppeteer as any).executablePath() : undefined);
-  localClient = new Client({
-    authStrategy: new LocalAuth({
-      dataPath: env.waSessionPath || './session'
-    }),
-    webVersionCache: {
-      type: 'remote',
-      remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1014.0-alpha.html'
-    },
-    puppeteer: {
-      executablePath,
-      args: [
+  const init = async () => {
+    try {
+      console.log('Initializing Local WhatsApp Bot...');
+      botStatus = 'initializing';
+
+      // Multi-layer DNS Resolution Strategy
+      console.log('Resolving web.whatsapp.com...');
+      let whatsappIp = '';
+      const resolveList = ['web.whatsapp.com','static.whatsapp.net','mmg.whatsapp.net','crashlogs.whatsapp.net','graph.whatsapp.com','api.whatsapp.com'];
+      const resolvedRules: string[] = [];
+      
+      // 1. Try Native Node DNS
+      try {
+        console.log('Attempt 1: Native DNS Lookup');
+        const lookup = promisify(dns.lookup);
+        const result = await lookup('web.whatsapp.com', { family: 4 });
+        whatsappIp = result.address;
+        console.log(`✅ Native DNS success: ${whatsappIp}`);
+      } catch (e) {
+        console.error('❌ Native DNS failed:', (e as any).code);
+        
+        // 2. Try Cloudflare DoH (Direct IP)
+        try {
+          console.log('Attempt 2: Cloudflare DoH via 1.1.1.1');
+          whatsappIp = await new Promise<string>((resolve, reject) => {
+            const req = https.request({
+              hostname: '1.1.1.1',
+              port: 443,
+              path: '/dns-query?name=web.whatsapp.com&type=A',
+              method: 'GET',
+              headers: { 'Accept': 'application/dns-json' },
+              rejectUnauthorized: false // In case of weird cert issues in container
+            }, (res) => {
+              let data = '';
+              res.on('data', chunk => data += chunk);
+              res.on('end', () => {
+                try {
+                  const json = JSON.parse(data);
+                  if (json.Answer && json.Answer.length > 0) {
+                    // Find first A record
+                    const aRecord = json.Answer.find((r: any) => r.type === 1);
+                    if (aRecord) resolve(aRecord.data);
+                    else reject('No A record found in DoH response');
+                  } else {
+                    reject('Empty DoH answer');
+                  }
+                } catch (err) {
+                  reject('Failed to parse DoH response');
+                }
+              });
+            });
+            req.on('error', reject);
+            req.end();
+          });
+          console.log(`✅ DoH success: ${whatsappIp}`);
+        } catch (dohErr) {
+          console.error('❌ DoH failed:', dohErr);
+          
+          // 3. Fallback to Hardcoded IPs (Meta/WhatsApp IPs)
+          // These are common IPs for web.whatsapp.com. 
+          // Note: These might change over time, but better than crashing.
+          const FALLBACK_IPS = [
+            '31.13.92.52',   // Meta
+            '157.240.229.60', // Meta
+            '157.240.198.60', // Meta
+            '157.240.22.60'   // Meta
+          ];
+          whatsappIp = FALLBACK_IPS[Math.floor(Math.random() * FALLBACK_IPS.length)];
+          console.log(`⚠️ Using Hardcoded Fallback IP: ${whatsappIp}`);
+        }
+      }
+
+      const executablePath = process.env.CHROME_PATH || (typeof (puppeteer as any)?.executablePath === 'function' ? (puppeteer as any).executablePath() : undefined);
+      const puppeteerArgs = [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--disable-gpu'
-      ],
-      headless: true,
-      protocolTimeout: 120000
-    }
-  });
+        '--disable-gpu',
+        '--use-gl=swiftshader',
+        '--disable-software-rasterizer',
+        '--disable-extensions',
+        '--disable-web-security',
+        '--ignore-certificate-errors',
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-ipv6',
+        '--window-size=1366,768'
+      ];
 
-  localClient.on('qr', (qr) => {
-    botStatus = 'qr_required';
-    latestQrString = qr;
-    console.log('QR RECEIVED. SCAN THIS WITH YOUR WHATSAPP:');
-    qrcode.generate(qr, { small: true });
-    console.log(`QR_STRING=${qr}`);
-  });
-
-  localClient.on('authenticated', () => {
-    botStatus = 'authenticated';
-    console.log('AUTHENTICATED: Session is valid!');
-  });
-
-  localClient.on('auth_failure', (msg) => {
-    botStatus = 'auth_failure';
-    console.error('AUTHENTICATION FAILURE:', msg);
-  });
-
-  localClient.on('ready', () => {
-    botStatus = 'ready';
-    console.log('Local WhatsApp Bot is READY!');
-  });
-
-  localClient.on('message', async (msg) => {
-    console.log(`[WA] Message received from ${msg.from}: ${msg.body}`);
-    const body = msg.body.trim();
-    
-    // ignore messages from status or groups if needed, but for now let's process all
-    if (msg.from === 'status@broadcast') return;
-
-    try {
-      let reply = await keywordReply(body);
-      
-      // If no keyword match, check if it's a booking format or send help
-      if (!reply) {
-        if (body.includes(':')) {
-          reply = buildReply(body);
-        } else {
-          // Fallback for casual messages
-          reply = [
-            'Maaf, saya tidak mengerti pesan tersebut. 🙏',
-            '',
-            'Ketik *Halo* untuk melihat daftar perintah yang tersedia.',
-            'Atau ketik *Paket* untuk melihat layanan travel kami.'
-          ].join('\n');
+      if (whatsappIp) {
+        resolvedRules.push(`MAP web.whatsapp.com ${whatsappIp}`);
+      }
+      for (const host of resolveList.slice(1)) {
+        try {
+          const lookup = promisify(dns.lookup);
+          const r = await lookup(host, { family: 4 });
+          resolvedRules.push(`MAP ${host} ${r.address}`);
+        } catch {
+          try {
+            const ip = await new Promise<string>((resolve, reject) => {
+              const req = https.request({
+                hostname: '1.1.1.1',
+                port: 443,
+                path: `/dns-query?name=${host}&type=A`,
+                method: 'GET',
+                headers: { 'Accept': 'application/dns-json' },
+                rejectUnauthorized: false
+              }, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                  try {
+                    const json = JSON.parse(data);
+                    const aRecord = (json.Answer || []).find((r: any) => r.type === 1);
+                    if (aRecord) resolve(aRecord.data);
+                    else reject('no_a');
+                  } catch {
+                    reject('parse');
+                  }
+                });
+              });
+              req.on('error', reject);
+              req.end();
+            });
+            resolvedRules.push(`MAP ${host} ${ip}`);
+          } catch {
+            resolvedRules.push(`MAP ${host} ${whatsappIp}`);
+          }
         }
       }
-      
-      if (reply && localClient) {
-        console.log(`[WA] Sending reply to ${msg.from}...`);
-        // Use client.sendMessage directly as it's often more stable than chat.sendMessage
-        await localClient.sendMessage(msg.from, reply, { sendSeen: false });
-        console.log(`[WA] Reply sent successfully to ${msg.from}`);
+      if (resolvedRules.length > 0) {
+        puppeteerArgs.push(`--host-resolver-rules=${resolvedRules.join(',')}`);
       }
-    } catch (err) {
-      console.error(`[WA] Error processing message from ${msg.from}:`, err);
-    }
-  });
 
-  localClient.initialize().catch(err => {
-    botStatus = 'failed_to_initialize';
-    console.error('FAILED TO INITIALIZE WHATSAPP CLIENT:', err);
-  });
+      localClient = new Client({
+        authStrategy: new LocalAuth({
+          dataPath: env.waSessionPath || './session'
+        }),
+        webVersionCache: {
+          type: 'remote',
+          remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1014.0-alpha.html'
+        },
+        restartOnAuthFail: true,
+        puppeteer: {
+          executablePath,
+          ignoreHTTPSErrors: true,
+          args: puppeteerArgs,
+          headless: 'new',
+          defaultViewport: null,
+          protocolTimeout: 300000
+        }
+      });
+
+      localClient.on('qr', (qr) => {
+        botStatus = 'qr_required';
+        latestQrString = qr;
+        console.log('QR RECEIVED. SCAN THIS WITH YOUR WHATSAPP:');
+        qrcode.generate(qr, { small: true });
+        console.log(`QR_STRING=${qr}`);
+      });
+
+      localClient.on('authenticated', () => {
+        botStatus = 'authenticated';
+        console.log('AUTHENTICATED: Session is valid!');
+      });
+
+      localClient.on('auth_failure', (msg) => {
+        botStatus = 'auth_failure';
+        console.error('AUTHENTICATION FAILURE:', msg);
+      });
+
+      localClient.on('ready', () => {
+        botStatus = 'ready';
+        console.log('Local WhatsApp Bot is READY!');
+      });
+
+      localClient.on('message', async (msg) => {
+        console.log(`[WA] Message received from ${msg.from}: ${msg.body}`);
+        const body = msg.body.trim();
+        
+        // ignore messages from status or groups if needed, but for now let's process all
+        if (msg.from === 'status@broadcast') return;
+
+        try {
+          let reply = await keywordReply(body);
+          
+          // If no keyword match, check if it's a booking format or send help
+          if (!reply) {
+            if (body.includes(':')) {
+              reply = buildReply(body);
+            } else {
+              // Fallback for casual messages
+              reply = [
+                'Maaf, saya tidak mengerti pesan tersebut. 🙏',
+                '',
+                'Ketik *Halo* untuk melihat daftar perintah yang tersedia.',
+                'Atau ketik *Paket* untuk melihat layanan travel kami.'
+              ].join('\n');
+            }
+          }
+          
+          if (reply && localClient) {
+            console.log(`[WA] Sending reply to ${msg.from}...`);
+            // Use client.sendMessage directly as it's often more stable than chat.sendMessage
+            await localClient.sendMessage(msg.from, reply, { sendSeen: false });
+            console.log(`[WA] Reply sent successfully to ${msg.from}`);
+          }
+        } catch (err) {
+          console.error(`[WA] Error processing message from ${msg.from}:`, err);
+        }
+      });
+
+      await localClient.initialize();
+      console.log('WhatsApp Client initialized successfully!');
+
+    } catch (error: any) {
+      console.error('FAILED TO INITIALIZE WHATSAPP CLIENT:', error);
+      const msg = typeof error === 'string' ? error : (error && error.message) ? error.message : 'unknown';
+      botStatus = `error: ${msg}`;
+      
+      // Destroy existing client to free resources/lock before retrying
+      if (localClient) {
+        try {
+          await localClient.destroy();
+          console.log('Previous client instance destroyed.');
+        } catch (destroyErr) {
+          console.error('Error destroying client instance:', destroyErr);
+        }
+      }
+
+      // Retry after 10 seconds
+      console.log('Retrying in 10 seconds...');
+      setTimeout(init, 10000);
+    }
+  };
+
+  init();
 }
 
 router.get('/health', (req, res) => {

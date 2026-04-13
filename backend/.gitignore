@@ -1,6 +1,14 @@
+# Ignore binary images but allow b64
+packages/*.jpeg
+packages/*.jpg
+packages/*.png
+packages/*.webp
+packages/*.svg
+uploads/*.jpeg
+uploads/*.jpg
+uploads/*.png
+
+session/
 node_modules/
 dist/
 .env
-session/
-*.log
-.DS_Store

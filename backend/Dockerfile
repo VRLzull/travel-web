@@ -17,11 +17,11 @@ COPY . .
 RUN npm run build
 
 # Environment variables
-ENV PORT=4000
+ENV PORT=7860
 ENV NODE_ENV=production
 
 # Expose port
-EXPOSE 4000
+EXPOSE 7860
 
 # Start command
 CMD ["node", "dist/server.js"]

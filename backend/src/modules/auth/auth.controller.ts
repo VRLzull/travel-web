@@ -67,9 +67,9 @@ export const register = async (req: RegisterRequest, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     console.log('\n=== 🚀 MENERIMA REQUEST LOGIN ===');
-    console.log('📝 Request body:', JSON.stringify(req.body, null, 2));
     
     const { email, password, isAdmin } = req.body;
+    console.log('📝 Request:', { email, isAdmin, hasPassword: Boolean(password) });
     
     // Validasi input
     if (!email || !password) {

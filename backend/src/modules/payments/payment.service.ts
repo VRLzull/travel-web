@@ -95,6 +95,7 @@ const createTransaction = async (booking: Booking, serverKey: string): Promise<M
       order_id: orderId,
       gross_amount: totalAmount,
     },
+    // enabled_payments dihapus agar memunculkan semua metode yang aktif di dashboard Midtrans Anda
     item_details: [
       {
         id: String(booking.package_id || '1'),
@@ -125,18 +126,8 @@ const createTransaction = async (booking: Booking, serverKey: string): Promise<M
     const response = await midtransSnap.createTransaction(parameter);
     console.log('Response dari Midtrans:', response);
     
-    // Generate token secara manual jika tidak ada di response
-    if (!response.token) {
-      const token = createHash('sha512')
-        .update(`${orderId}${response.status_code}${response.gross_amount}${serverKey}`)
-        .digest('hex');
-      const base = env.midtransIsProduction ? 'https://app.midtrans.com' : 'https://app.sandbox.midtrans.com';
-      return {
-        ...response,
-        token: token,
-        redirect_url: response.redirect_url || `${base}/snap/v2/vtweb/${token}`,
-        order_id: orderId
-      };
+    if (!response || !response.token) {
+      throw new Error('Midtrans response does not contain Snap token');
     }
 
     return {
@@ -315,13 +306,13 @@ export async function handleMidtransNotification(notification: any): Promise<{ s
 
     // 3. Map Midtrans status to booking status
     // Map Midtrans status to payment_status text in bookings
-    let paymentStatusText = 'pending';
+    let paymentStatusText: 'pending' | 'paid' | 'failed' | 'cancelled' = 'pending';
     if (['capture', 'settlement'].includes(status)) {
       paymentStatusText = fraud_status === 'challenge' ? 'pending' : 'paid';
     } else if (status === 'cancel' || status === 'deny') {
       paymentStatusText = 'cancelled';
-    } else if (status === 'expire') {
-      paymentStatusText = 'expired';
+    } else if (status === 'expire' || status === 'failure') {
+      paymentStatusText = 'failed';
     }
 
     // 4. Update booking payment_status only
@@ -409,20 +400,22 @@ export async function updatePaymentStatus(
 
 export async function updatePaymentAndBookingStatus(
   orderId: string,
-  finalStatus: 'pending' | 'paid' | 'expired' | 'cancelled',
+  finalStatus: 'pending' | 'paid' | 'failed' | 'cancelled',
   notification: any = {}
 ): Promise<{ success: boolean }> {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
-    const paymentStatus: PaymentStatus = finalStatus === 'paid'
-      ? 'settlement'
-      : finalStatus === 'expired'
-      ? 'expire'
-      : finalStatus === 'cancelled'
-      ? 'cancel'
-      : 'pending';
+    const txStatus = String(notification?.transaction_status || '').toLowerCase();
+    const paymentStatus: PaymentStatus =
+      finalStatus === 'paid'
+        ? 'settlement'
+        : finalStatus === 'cancelled'
+          ? 'cancel'
+          : finalStatus === 'failed'
+            ? (txStatus === 'expire' ? 'expire' : 'failure')
+            : 'pending';
 
     await connection.query(
       `UPDATE payments 
@@ -441,13 +434,14 @@ export async function updatePaymentAndBookingStatus(
     const bookingId = Array.isArray(rows) && rows.length > 0 ? rows[0].booking_id : null;
 
     if (bookingId) {
-      const paymentStatusText = finalStatus === 'paid'
-        ? 'paid'
-        : finalStatus === 'expired'
-        ? 'expired'
-        : finalStatus === 'cancelled'
-        ? 'cancelled'
-        : 'pending';
+      const paymentStatusText: 'pending' | 'paid' | 'failed' | 'cancelled' =
+        finalStatus === 'paid'
+          ? 'paid'
+          : finalStatus === 'cancelled'
+            ? 'cancelled'
+            : finalStatus === 'failed'
+              ? 'failed'
+              : 'pending';
 
       await connection.query(
         `UPDATE bookings 
@@ -470,7 +464,7 @@ export async function updatePaymentAndBookingStatus(
 
 export async function manualCreatePayment(
   bookingId: number,
-  finalStatus: 'pending' | 'paid' | 'expired' | 'cancelled' = 'paid',
+  finalStatus: 'pending' | 'paid' | 'failed' | 'cancelled' = 'paid',
   amountOverride?: number,
   note: string = ''
 ): Promise<{ success: boolean; order_id: string }> {
@@ -494,13 +488,14 @@ export async function manualCreatePayment(
 
     const orderId = `MANUAL-${bookingId}-${Date.now()}`;
 
-    const paymentStatus: PaymentStatus = finalStatus === 'paid'
-      ? 'settlement'
-      : finalStatus === 'expired'
-      ? 'expire'
-      : finalStatus === 'cancelled'
-      ? 'cancel'
-      : 'pending';
+    const paymentStatus: PaymentStatus =
+      finalStatus === 'paid'
+        ? 'settlement'
+        : finalStatus === 'cancelled'
+          ? 'cancel'
+          : finalStatus === 'failed'
+            ? 'failure'
+            : 'pending';
 
     await connection.query(
       `INSERT INTO payments (
@@ -530,13 +525,14 @@ export async function manualCreatePayment(
       ]
     );
 
-    const bookingStatusText = finalStatus === 'paid'
-      ? 'paid'
-      : finalStatus === 'expired'
-      ? 'expired'
-      : finalStatus === 'cancelled'
-      ? 'cancelled'
-      : 'pending';
+    const bookingStatusText: 'pending' | 'paid' | 'failed' | 'cancelled' =
+      finalStatus === 'paid'
+        ? 'paid'
+        : finalStatus === 'cancelled'
+          ? 'cancelled'
+          : finalStatus === 'failed'
+            ? 'failed'
+            : 'pending';
 
     await connection.query(
       `UPDATE bookings

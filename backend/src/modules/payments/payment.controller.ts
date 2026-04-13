@@ -117,14 +117,14 @@ export const handleNotification = async (req: any, res: Response) => {
 
     const { order_id, transaction_status, fraud_status, signature_key, gross_amount, status_code } = notification;
 
-    // Verifikasi signature - DINONAKTIFKAN UNTUK TESTING
-    console.log('⚠️ Signature verification is disabled for testing');
-    /*
     if (signature_key) {
       const serverKey = env.midtransServerKey;
+      if (!serverKey) {
+        return res.status(500).json({ success: false, message: 'Midtrans server key belum dikonfigurasi' });
+      }
       const hash = crypto
         .createHash('sha512')
-        .update(order_id + status_code + gross_amount + serverKey)
+        .update(order_id + (status_code || '') + (gross_amount || '') + serverKey)
         .digest('hex');
 
       if (hash !== signature_key) {
@@ -135,10 +135,9 @@ export const handleNotification = async (req: any, res: Response) => {
         });
       }
     }
-    */
 
     // Tentukan status pembayaran
-    let finalStatus: "pending" | "paid" | "expired" | "cancelled" = "pending";
+    let finalStatus: "pending" | "paid" | "failed" | "cancelled" = "pending";
     
     switch (transaction_status) {
       case 'capture':
@@ -156,7 +155,10 @@ export const handleNotification = async (req: any, res: Response) => {
         finalStatus = 'cancelled';
         break;
       case 'expire':
-        finalStatus = 'expired';
+        finalStatus = 'failed';
+        break;
+      case 'failure':
+        finalStatus = 'failed';
         break;
       default:
         finalStatus = 'pending';
@@ -304,7 +306,7 @@ export const manualPaymentCreateHandler = async (req: IAuthRequest, res: Respons
   try {
     const { booking_id, final_status, amount, note } = req.body as {
       booking_id: number;
-      final_status?: 'pending' | 'paid' | 'expired' | 'cancelled';
+      final_status?: 'pending' | 'paid' | 'failed' | 'cancelled';
       amount?: number;
       note?: string;
     };
@@ -333,7 +335,7 @@ export const manualPaymentUpdateHandler = async (req: IAuthRequest, res: Respons
   try {
     const { order_id, final_status, note } = req.body as {
       order_id: string;
-      final_status: 'pending' | 'paid' | 'expired' | 'cancelled';
+      final_status: 'pending' | 'paid' | 'failed' | 'cancelled';
       note?: string;
     };
 
