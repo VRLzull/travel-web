@@ -289,14 +289,35 @@ export async function deleteBooking(id: number) {
 }
 
 export async function clearBookingsByMonth(month?: number, year?: number) {
-  if (month !== undefined && year !== undefined) {
-    const [result] = await pool.query(
-      `DELETE FROM bookings WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?`,
-      [month, year]
-    );
-    return result;
-  }
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
 
-  const [result] = await pool.query(`DELETE FROM bookings`);
-  return result;
+    if (month !== undefined && year !== undefined) {
+      // Hapus payment terkait dulu untuk menghindari FK error pada DB yang belum ON DELETE CASCADE.
+      await conn.query(
+        `DELETE p FROM payments p
+         INNER JOIN bookings b ON b.id = p.booking_id
+         WHERE MONTH(b.created_at) = ? AND YEAR(b.created_at) = ?`,
+        [month, year]
+      );
+
+      const [result] = await conn.query(
+        `DELETE FROM bookings WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?`,
+        [month, year]
+      );
+      await conn.commit();
+      return result;
+    }
+
+    await conn.query(`DELETE FROM payments`);
+    const [result] = await conn.query(`DELETE FROM bookings`);
+    await conn.commit();
+    return result;
+  } catch (error) {
+    await conn.rollback();
+    throw error;
+  } finally {
+    conn.release();
+  }
 }
