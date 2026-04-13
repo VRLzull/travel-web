@@ -580,7 +580,10 @@ async function keywordReply(t: string): Promise<string | null> {
       `No. Rekening: ${bankAccountNumber}`,
       `Atas Nama: ${bankAccountHolder}`,
       '',
-      'Silakan transfer sesuai total tagihan, lalu kirim bukti transfer di chat ini agar admin segera verifikasi. Terimakasih 🙏'
+      'Silakan transfer sesuai total tagihan.',
+      'Setelah transfer, kirim screenshot bukti transfer di chat ini lalu ketik: *konfirmasi pembayaran*.',
+      '',
+      'Terimakasih 🙏'
     ].join('\n');
   }
   

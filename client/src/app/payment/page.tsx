@@ -83,14 +83,13 @@ const PaymentContent = () => {
     const number = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '').replace(/[^0-9]/g, '');
     if (!number || !bookingIdParam) return '';
     const lines = [
-      '*KONFIRMASI PEMBAYARAN TRANSFER*',
+      '*BAYAR ONLINE*',
       '',
-      `Metode: ${paymentMethodParam === 'online' ? 'Online Transfer' : 'COD'}`,
       `Booking ID: ${bookingIdParam}`,
       `Kode Booking: ${status?.order_id || '-'}`,
-      `Nominal: ${formatCurrency(Number(status?.amount || 0))}`,
+      `Nominal Tagihan: ${formatCurrency(Number(status?.amount || 0))}`,
       '',
-      'Saya sudah transfer dan melampirkan bukti pembayaran.'
+      'Mohon kirim detail rekening pembayaran.'
     ];
     return `https://wa.me/${number}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
@@ -170,7 +169,7 @@ const PaymentContent = () => {
 
             <div className="mb-6 space-y-3">
               <h3 className="text-lg font-semibold text-gray-900">Konfirmasi Pembayaran</h3>
-              <p className="text-sm text-gray-600">Klik tombol WhatsApp di bawah. Chatbot akan mengirimkan detail rekening transfer dan Anda bisa langsung kirim bukti pembayaran di sana.</p>
+              <p className="text-sm text-gray-600">Klik tombol WhatsApp untuk minta detail rekening. Setelah transfer, kirim screenshot bukti transfer di chat yang sama lalu ketik konfirmasi pembayaran.</p>
               <a
                 href={getWhatsappUrl() || '#'}
                 target="_blank"
@@ -178,7 +177,7 @@ const PaymentContent = () => {
                 className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
               >
                 <FiPhone />
-                Konfirmasi via WhatsApp
+                Minta Detail Rekening via WhatsApp
               </a>
             </div>
 
