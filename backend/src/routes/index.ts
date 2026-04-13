@@ -421,6 +421,26 @@ router.get('/whatsapp/test', async (req, res) => {
   }
 });
 
+// Preview balasan chatbot tanpa perlu bot WhatsApp ready
+router.post('/whatsapp/preview', async (req, res) => {
+  try {
+    const text = String(req.body?.text || '').trim();
+    if (!text) {
+      return res.status(400).json({ success: false, message: 'Field text wajib diisi' });
+    }
+    const reply = await keywordReply(text) || buildReply(text);
+    return res.json({
+      success: true,
+      data: {
+        input: text,
+        reply
+      }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Gagal preview balasan chatbot' });
+  }
+});
+
 router.get('/whatsapp/webhook', (req, res) => {
   const mode = String(req.query['hub.mode'] || '');
   const token = String(req.query['hub.verify_token'] || '');
