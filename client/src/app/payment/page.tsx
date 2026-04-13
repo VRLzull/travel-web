@@ -17,6 +17,7 @@ const PaymentContent = () => {
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get('orderId') || searchParams.get('order_id') || '';
   const bookingIdParam = searchParams.get('booking_id') || searchParams.get('bookingId') || '';
+  const paymentMethodParam = searchParams.get('method') || 'online';
   
   const [status, setStatus] = useState<PaymentStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ const PaymentContent = () => {
             setStatus({
               order_id: booking.booking_code || `BOOKING-${booking.id}`,
               status: booking.payment_status,
-              amount: booking.total_amount,
+              amount: Number(booking.total_amount || 0),
             });
           } else {
             const res = await apiClient.getPaymentByBooking(Number(bookingIdParam));
@@ -74,7 +75,7 @@ const PaymentContent = () => {
       }
     };
     loadStatus();
-  }, [orderIdParam, bookingIdParam]);
+  }, [orderIdParam, bookingIdParam, manualMode]);
 
   const expiryText = status?.paymentExpiry ? formatExpiry(new Date(status.paymentExpiry)) : '-';
 
@@ -84,9 +85,10 @@ const PaymentContent = () => {
     const lines = [
       '*KONFIRMASI PEMBAYARAN TRANSFER*',
       '',
+      `Metode: ${paymentMethodParam === 'online' ? 'Online Transfer' : 'COD'}`,
       `Booking ID: ${bookingIdParam}`,
       `Kode Booking: ${status?.order_id || '-'}`,
-      `Nominal: ${formatCurrency(typeof status?.amount === 'number' ? status.amount : 0)}`,
+      `Nominal: ${formatCurrency(Number(status?.amount || 0))}`,
       '',
       'Saya sudah transfer dan melampirkan bukti pembayaran.'
     ];
@@ -154,7 +156,7 @@ const PaymentContent = () => {
             </div>
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-500 mb-2">Total Pembayaran</h3>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(typeof status?.amount === 'number' ? status.amount : 0)}</p>
+              <p className="text-2xl font-bold text-blue-600">{formatCurrency(Number(status?.amount || 0))}</p>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg mb-6">
               <div className="flex">
@@ -168,7 +170,7 @@ const PaymentContent = () => {
 
             <div className="mb-6 space-y-3">
               <h3 className="text-lg font-semibold text-gray-900">Konfirmasi Pembayaran</h3>
-              <p className="text-sm text-gray-600">Lakukan transfer ke rekening admin, lalu kirim bukti transfer melalui WhatsApp agar pesanan segera diproses.</p>
+              <p className="text-sm text-gray-600">Klik tombol WhatsApp di bawah. Chatbot akan mengirimkan detail rekening transfer dan Anda bisa langsung kirim bukti pembayaran di sana.</p>
               <a
                 href={getWhatsappUrl() || '#'}
                 target="_blank"

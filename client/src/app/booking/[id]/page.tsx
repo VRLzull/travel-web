@@ -16,6 +16,7 @@ export default function BookingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams();
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -193,7 +194,30 @@ export default function BookingPage() {
         setErrorMsg('Gagal mendapatkan booking_id dari server. Coba lagi atau hubungi admin.');
         return;
       }
-      router.push(`/payment?booking_id=${bookingId}&manual=1`);
+      if (paymentMethod === 'online') {
+        router.push(`/payment?booking_id=${bookingId}&manual=1&method=online`);
+      } else {
+        const number = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '').replace(/[^0-9]/g, '');
+        if (!number) {
+          setIsSubmitting(false);
+          setErrorMsg('Nomor WhatsApp belum dikonfigurasi. Set NEXT_PUBLIC_WHATSAPP_NUMBER di .env');
+          return;
+        }
+        const lines = [
+          '*PESANAN BARU - COD*',
+          '',
+          `Booking ID: ${bookingId}`,
+          `Paket: ${packageData?.title || packageData?.location || '-'}`,
+          `Nama: ${formData.fullName}`,
+          `Telepon: ${formData.phone}`,
+          `Tanggal: ${formatDate(departureDate)}`,
+          `Durasi/Unit: ${participants} Hari`,
+          '',
+          'Metode Bayar: Cash on Delivery (ke Driver/Sopir)'
+        ];
+        window.open(`https://wa.me/${number}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
+        router.push('/orders');
+      }
     } catch (e: unknown) {
       setIsSubmitting(false);
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -252,8 +276,26 @@ export default function BookingPage() {
               )}
               
               <form onSubmit={handleSubmit}>
-                <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                  Pembayaran menggunakan transfer manual. Setelah booking dibuat, Anda akan diarahkan ke halaman konfirmasi WhatsApp untuk kirim bukti transfer.
+                <div className="mb-4">
+                  <label className="mb-2 block text-sm font-medium text-gray-700">Metode Pembayaran</label>
+                  <div className="flex flex-col gap-2 rounded-md border border-gray-200 p-3 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        checked={paymentMethod === 'online'}
+                        onChange={() => setPaymentMethod('online')}
+                      />
+                      Bayar Online (Transfer + Konfirmasi via WhatsApp)
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        checked={paymentMethod === 'cod'}
+                        onChange={() => setPaymentMethod('cod')}
+                      />
+                      Cash on Delivery (ke Driver/Sopir)
+                    </label>
+                  </div>
                 </div>
                 <div className="mb-4">
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -411,7 +453,7 @@ export default function BookingPage() {
                     'Memproses...'
                   ) : (
                     <>
-                      Buat Pesanan
+                      {paymentMethod === 'online' ? 'Lanjutkan ke Pembayaran' : 'Buat Pesanan COD'}
                       <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>

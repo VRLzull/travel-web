@@ -568,6 +568,21 @@ async function keywordReply(t: string): Promise<string | null> {
   if (s.includes('konfirmasi')) {
     return 'Pesanan Anda sudah kami terima. Silakan cek detailnya melalui link yang dikirimkan sebelumnya. Terimakasih 🙏';
   }
+
+  if (s.includes('bayar online') || s.includes('pembayaran online') || s.includes('nomor rekening') || s.includes('norek')) {
+    const bankName = process.env.BANK_NAME || 'BCA';
+    const bankAccountNumber = process.env.BANK_ACCOUNT_NUMBER || '1234567890';
+    const bankAccountHolder = process.env.BANK_ACCOUNT_HOLDER || 'Faraday Tour & Travel';
+    return [
+      '💳 *Informasi Rekening Pembayaran*',
+      '',
+      `Bank: ${bankName}`,
+      `No. Rekening: ${bankAccountNumber}`,
+      `Atas Nama: ${bankAccountHolder}`,
+      '',
+      'Silakan transfer sesuai total tagihan, lalu kirim bukti transfer di chat ini agar admin segera verifikasi. Terimakasih 🙏'
+    ].join('\n');
+  }
   
   if (s.includes('pricelist') || s.includes('harga') || s.includes('tarif') || s.includes('ongkos')) {
     return [
