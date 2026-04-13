@@ -170,6 +170,19 @@ export const resetUserPassword = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'User ID wajib diisi' });
+    }
+    await authService.deleteUser(id);
+    return res.json({ success: true, message: `User #${id} berhasil dihapus` });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message || 'Gagal menghapus user' });
+  }
+};
+
 export const getAdminStats = async (_req: Request, res: Response) => {
   try {
     // Ambil tanggal reset dari settings

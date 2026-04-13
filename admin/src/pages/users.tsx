@@ -38,6 +38,16 @@ export default function UsersPage() {
     }
   }
 
+  const handleDeleteUser = async (user: User) => {
+    if (!window.confirm(`Hapus user ${user.name}? Semua booking terkait user ini juga akan terhapus.`)) return
+    try {
+      await adminApi.deleteUser(user.id)
+      await loadUsers()
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Gagal menghapus user')
+    }
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Kelola User</h1>
@@ -72,12 +82,20 @@ export default function UsersPage() {
                       <td className="px-4 py-2">{u.phone}</td>
                       <td className="px-4 py-2">{new Date(u.created_at).toLocaleString('id-ID')}</td>
                       <td className="px-4 py-2">
-                        <button
-                          className="px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                          onClick={() => handleResetPassword(u)}
-                        >
-                          Reset Password
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className="px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                            onClick={() => handleResetPassword(u)}
+                          >
+                            Reset Password
+                          </button>
+                          <button
+                            className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                            onClick={() => handleDeleteUser(u)}
+                          >
+                            Hapus User
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

@@ -191,6 +191,35 @@ export const resetUserPassword = async (userId: number, newPassword: string) => 
   return updated;
 };
 
+export const deleteUser = async (userId: number) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Hapus payment terkait booking user untuk kompatibilitas skema non-cascade.
+    await conn.query(
+      `DELETE p FROM payments p
+       INNER JOIN bookings b ON b.id = p.booking_id
+       WHERE b.user_id = ?`,
+      [userId]
+    );
+    await conn.query(`DELETE FROM bookings WHERE user_id = ?`, [userId]);
+    const [result] = await conn.query('DELETE FROM users WHERE id = ?', [userId]) as any;
+
+    if (!result || result.affectedRows === 0) {
+      throw new Error('User tidak ditemukan');
+    }
+
+    await conn.commit();
+    return { id: userId };
+  } catch (error) {
+    await conn.rollback();
+    throw error;
+  } finally {
+    conn.release();
+  }
+};
+
 export const bootstrapAdminUser = async (email: string, password: string, name: string = 'Administrator') => {
   if (!email || !password) {
     throw new Error('Email dan password diperlukan');

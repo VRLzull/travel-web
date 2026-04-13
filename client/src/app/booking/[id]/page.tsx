@@ -16,7 +16,6 @@ export default function BookingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams();
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'whatsapp'>('online');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -194,51 +193,7 @@ export default function BookingPage() {
         setErrorMsg('Gagal mendapatkan booking_id dari server. Coba lagi atau hubungi admin.');
         return;
       }
-      if (paymentMethod === 'online') {
-        const payment = await apiClient.createPayment(Number(bookingId));
-        try {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('last_order_id', payment.data.order_id || '');
-          }
-        } catch {}
-        console.log('Redirect ke halaman pembayaran:', payment.data.redirect_url, 'Order ID:', payment.data.order_id);
-        window.location.href = payment.data.redirect_url;
-      } else {
-        const number = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '').replace(/[^0-9]/g, '');
-        if (!number) {
-          setIsSubmitting(false);
-          setErrorMsg('Nomor WhatsApp belum dikonfigurasi. Set NEXT_PUBLIC_WHATSAPP_NUMBER di .env.local');
-          return;
-        }
-        const routeName = packageData?.title || packageData?.location || 'Paket Travel';
-        const lines = [
-          `*PESANAN BARU - ${paymentMethod === 'whatsapp' ? 'CASH' : 'ONLINE'}*`,
-          '',
-          `Order ID: ${bookingId}`,
-          `Paket: ${routeName}`,
-          `Hari/Tgl: ${formatDate(departureDate)}`,
-          `Nama: ${formData.fullName}`,
-          `No.Telp: ${formData.phone}`,
-          `Metode Bayar: ${paymentMethod === 'whatsapp' ? 'Cash ke Driver' : 'Online (Midtrans)'}`,
-          '',
-          tripDetails.travelTime && `Jam Travel: ${tripDetails.travelTime}`,
-          tripDetails.landingTime && `Jam Landing : ${tripDetails.landingTime}`,
-          `Durasi / Unit : ${participants} hari`,
-          tripDetails.airline && `Maskapai : ${tripDetails.airline}`,
-          tripDetails.flightCode && `Kode penerbangan : ${tripDetails.flightCode}`,
-          tripDetails.terminal && `Terminal : ${tripDetails.terminal}`,
-          tripDetails.pickupAddress && `Alamat Penjemputan : ${tripDetails.pickupAddress}`,
-          tripDetails.dropoffAddress && `Alamat Tujuan : ${tripDetails.dropoffAddress}`,
-          '',
-          (formData.notes || '').trim() && `Catatan: ${formData.notes.trim()}`,
-          '',
-          'Terimakasih 🙏'
-        ].filter(Boolean) as string[];
-        const text = encodeURIComponent(lines.join('\n'));
-        const url = `https://wa.me/${number}?text=${text}`;
-        window.open(url, '_blank');
-        router.push('/orders');
-      }
+      router.push(`/payment?booking_id=${bookingId}&manual=1`);
     } catch (e: unknown) {
       setIsSubmitting(false);
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -297,30 +252,8 @@ export default function BookingPage() {
               )}
               
               <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Metode Pembayaran
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        checked={paymentMethod === 'online'}
-                        onChange={() => setPaymentMethod('online')}
-                      />
-                      Bayar Online (Midtrans)
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        checked={paymentMethod === 'whatsapp'}
-                        onChange={() => setPaymentMethod('whatsapp')}
-                      />
-                      Bayar Cash (ke Driver/Sopir)
-                    </label>
-                  </div>
+                <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  Pembayaran menggunakan transfer manual. Setelah booking dibuat, Anda akan diarahkan ke halaman konfirmasi WhatsApp untuk kirim bukti transfer.
                 </div>
                 <div className="mb-4">
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -478,7 +411,7 @@ export default function BookingPage() {
                     'Memproses...'
                   ) : (
                     <>
-                      Lanjutkan ke Pembayaran
+                      Buat Pesanan
                       <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>

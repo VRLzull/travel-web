@@ -59,6 +59,10 @@ adminRouter.put('/users/:id/reset-password', (req: Request, res: Response) => {
   return authController.resetUserPassword(req, res);
 });
 
+adminRouter.delete('/users/:id', (req: Request, res: Response) => {
+  return authController.deleteUser(req, res);
+});
+
 adminRouter.get('/stats', (req: Request, res: Response) => {
   return authController.getAdminStats(req, res);
 });

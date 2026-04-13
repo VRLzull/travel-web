@@ -303,6 +303,9 @@ export const adminApi = {
   resetUserPassword: async (id: number, password: string) => {
     return await authFetch(`/auth/admin/users/${id}/reset-password`, { method: 'PUT', body: JSON.stringify({ password }) });
   },
+  deleteUser: async (id: number) => {
+    return await authFetch(`/auth/admin/users/${id}`, { method: 'DELETE' });
+  },
 
   // Stats
   getAdminStats: async (): Promise<{ success: boolean; data: AdminStats }> => {
