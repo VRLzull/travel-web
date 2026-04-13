@@ -8,6 +8,7 @@ export default function OrdersPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterPackageId, setFilterPackageId] = useState<number | undefined>(undefined)
+  const [clearMonth, setClearMonth] = useState('')
   const [exporting, setExporting] = useState(false)
   const [paymentInfo, setPaymentInfo] = useState<any | null>(null)
 
@@ -153,6 +154,38 @@ export default function OrdersPage() {
     }
   };
 
+  const handleClearAllBookings = async () => {
+    if (!window.confirm('Hapus SEMUA data pesanan secara permanen? Tindakan ini tidak bisa dibatalkan.')) return;
+    try {
+      setLoading(true);
+      const res = await adminApi.clearBookings();
+      await load();
+      alert(res?.message || 'Semua pesanan berhasil dihapus');
+    } catch (e: any) {
+      alert(e.message || 'Gagal menghapus semua pesanan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearMonthlyBookings = async () => {
+    if (!clearMonth) {
+      alert('Pilih bulan terlebih dahulu');
+      return;
+    }
+    if (!window.confirm(`Hapus semua pesanan untuk bulan ${clearMonth}? Tindakan ini tidak bisa dibatalkan.`)) return;
+    try {
+      setLoading(true);
+      const res = await adminApi.clearBookings(clearMonth);
+      await load();
+      alert(res?.message || `Pesanan bulan ${clearMonth} berhasil dihapus`);
+    } catch (e: any) {
+      alert(e.message || 'Gagal menghapus pesanan per bulan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -201,6 +234,32 @@ export default function OrdersPage() {
             disabled={exporting}
           >
             {exporting ? 'Mengekspor...' : 'Export CSV'}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 border-t border-gray-100">
+          <div className="text-sm font-medium text-red-700 flex items-center">
+            Hapus Massal Pesanan
+          </div>
+          <input
+            type="month"
+            className="w-full border rounded-md px-3 py-2 text-sm md:text-base"
+            value={clearMonth}
+            onChange={e => setClearMonth(e.target.value)}
+          />
+          <button
+            onClick={handleClearMonthlyBookings}
+            className="w-full px-3 py-2 rounded-md bg-red-500 text-white text-sm md:text-base disabled:bg-red-300"
+            disabled={loading}
+          >
+            Clear Per Bulan
+          </button>
+          <button
+            onClick={handleClearAllBookings}
+            className="w-full px-3 py-2 rounded-md bg-red-700 text-white text-sm md:text-base disabled:bg-red-400"
+            disabled={loading}
+          >
+            Clear All Pesanan
           </button>
         </div>
       </div>

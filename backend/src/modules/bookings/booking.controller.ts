@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { createBooking, getBookingById, getAllBookings, updateBookingStatus, deleteBooking } from "./booking.service";
+import { createBooking, getBookingById, getAllBookings, updateBookingStatus, deleteBooking, clearBookingsByMonth } from "./booking.service";
 import { IAuthRequest } from "../../types/user";
 
 export const getBookingsHandler = async (req: IAuthRequest, res: Response) => {
@@ -93,6 +93,46 @@ export const deleteBookingHandler = async (req: IAuthRequest, res: Response) => 
   } catch (err) {
     console.error("Error deleting booking", err);
     return res.status(500).json({ success: false, message: "Gagal menghapus transaksi" });
+  }
+};
+
+export const clearBookingsHandler = async (req: IAuthRequest, res: Response) => {
+  try {
+    const isAdmin = req.role === 'ADMIN' || req.role === 'SUPERADMIN';
+    if (!isAdmin) {
+      return res.status(403).json({ success: false, message: "Akses ditolak: Hanya admin yang bisa menghapus transaksi" });
+    }
+
+    const monthRaw = req.body?.month;
+    const yearRaw = req.body?.year;
+    let month: number | undefined;
+    let year: number | undefined;
+
+    if (monthRaw !== undefined || yearRaw !== undefined) {
+      month = Number(monthRaw);
+      year = Number(yearRaw);
+
+      if (!month || !year || month < 1 || month > 12 || year < 2000 || year > 3000) {
+        return res.status(400).json({
+          success: false,
+          message: "Format bulan/tahun tidak valid"
+        });
+      }
+    }
+
+    const result = await clearBookingsByMonth(month, year);
+    const affectedRows = (result as any)?.affectedRows ?? 0;
+
+    return res.json({
+      success: true,
+      message: month && year
+        ? `Berhasil menghapus ${affectedRows} transaksi untuk ${String(month).padStart(2, '0')}/${year}`
+        : `Berhasil menghapus ${affectedRows} transaksi`,
+      affectedRows
+    });
+  } catch (err) {
+    console.error("Error clearing bookings", err);
+    return res.status(500).json({ success: false, message: "Gagal menghapus transaksi massal" });
   }
 };
 

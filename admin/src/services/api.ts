@@ -329,4 +329,22 @@ export const adminApi = {
       method: 'DELETE'
     });
   },
+
+  clearBookings: async (monthYear?: string) => {
+    let payload: { month?: number; year?: number } = {};
+
+    if (monthYear) {
+      const [yearStr, monthStr] = monthYear.split('-');
+      const year = Number(yearStr);
+      const month = Number(monthStr);
+      if (year && month) {
+        payload = { month, year };
+      }
+    }
+
+    return await authFetch('/bookings/clear', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
 };

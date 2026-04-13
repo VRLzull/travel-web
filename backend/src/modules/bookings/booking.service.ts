@@ -287,3 +287,16 @@ export async function deleteBooking(id: number) {
   );
   return result;
 }
+
+export async function clearBookingsByMonth(month?: number, year?: number) {
+  if (month !== undefined && year !== undefined) {
+    const [result] = await pool.query(
+      `DELETE FROM bookings WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?`,
+      [month, year]
+    );
+    return result;
+  }
+
+  const [result] = await pool.query(`DELETE FROM bookings`);
+  return result;
+}
